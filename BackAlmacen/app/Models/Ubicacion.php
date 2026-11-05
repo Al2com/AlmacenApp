@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\UbicacionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Ubicacion extends Model
 {
@@ -37,5 +38,13 @@ class Ubicacion extends Model
             'max_lotes' => 'integer',
             'activa' => 'boolean',
         ];
+    }
+
+    /**
+     * @return HasMany<Stock, $this>
+     */
+    public function stock(): HasMany
+    {
+        return $this->hasMany(Stock::class);
     }
 }

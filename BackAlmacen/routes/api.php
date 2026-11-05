@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PanelController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,5 +17,14 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
     // Hasta cambiar la contraseña del primer acceso, no se llega al resto.
     Route::middleware('password.cambiada')->group(function (): void {
         Route::apiResource('usuarios', UsuarioController::class)->only(['index', 'store', 'update']);
+
+        // Panel general: solo admin y gestor.
+        Route::middleware('can:ver-panel')->prefix('panel')->group(function (): void {
+            Route::get('/cifras', [PanelController::class, 'cifras']);
+            Route::get('/estanteria', [PanelController::class, 'estanteria']);
+            Route::get('/fefo', [PanelController::class, 'fefo']);
+            Route::get('/movimientos', [PanelController::class, 'movimientos']);
+            Route::get('/flujo', [PanelController::class, 'flujo']);
+        });
     });
 });

@@ -7,10 +7,17 @@ use Database\Factories\MovimientoFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Registro inmutable: un movimiento nunca se edita ni se borra. Por eso solo
  * guarda created_at, no updated_at.
+ *
+ * @property int $id
+ * @property TipoMovimiento $tipo
+ * @property string $cantidad
+ * @property string|null $motivo
+ * @property Carbon $created_at
  */
 class Movimiento extends Model
 {
@@ -57,5 +64,21 @@ class Movimiento extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<Ubicacion, $this>
+     */
+    public function ubicacionOrigen(): BelongsTo
+    {
+        return $this->belongsTo(Ubicacion::class, 'ubicacion_origen_id');
+    }
+
+    /**
+     * @return BelongsTo<Ubicacion, $this>
+     */
+    public function ubicacionDestino(): BelongsTo
+    {
+        return $this->belongsTo(Ubicacion::class, 'ubicacion_destino_id');
     }
 }
