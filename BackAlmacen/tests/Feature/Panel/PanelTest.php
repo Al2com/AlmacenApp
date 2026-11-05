@@ -2,11 +2,15 @@
 
 namespace Tests\Feature\Panel;
 
+use App\Enums\EstadoOrden;
 use App\Enums\Rol;
 use App\Enums\TipoMovimiento;
 use App\Models\Articulo;
 use App\Models\Lote;
+use App\Models\OrdenLinea;
+use App\Models\OrdenProduccion;
 use App\Models\Stock;
+use App\Models\TareaPicking;
 use App\Models\Ubicacion;
 use App\Models\User;
 use App\Services\RegistroMovimiento;
@@ -51,6 +55,20 @@ class PanelTest extends TestCase
             ->assertOk()
             ->assertJsonPath('lotes_caducan_pronto', 1)
             ->assertJsonPath('ordenes_en_curso', 0);
+    }
+
+    public function test_las_cifras_cuentan_ordenes_en_curso_y_tareas_pendientes(): void
+    {
+        $linea = OrdenLinea::factory()->create([
+            'orden_id' => OrdenProduccion::factory()->create(['estado' => EstadoOrden::Lanzada])->id,
+        ]);
+        TareaPicking::factory()->create(['orden_linea_id' => $linea->id]);
+
+        $this->actingAs($this->gestor())
+            ->getJson('/api/panel/cifras')
+            ->assertOk()
+            ->assertJsonPath('ordenes_en_curso', 1)
+            ->assertJsonPath('tareas_pendientes', 1);
     }
 
     public function test_la_estanteria_marca_el_estado_de_cada_posicion(): void

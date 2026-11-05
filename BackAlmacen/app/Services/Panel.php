@@ -2,9 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\EstadoOrden;
+use App\Enums\EstadoTarea;
 use App\Models\Lote;
 use App\Models\Movimiento;
+use App\Models\OrdenProduccion;
 use App\Models\Stock;
+use App\Models\TareaPicking;
 use App\Models\Ubicacion;
 use App\Support\FechaSimulada;
 use Illuminate\Database\Eloquent\Collection;
@@ -36,10 +40,23 @@ class Panel
             ->distinct()
             ->count('lotes.id');
 
+        $ordenesEnCurso = OrdenProduccion::query()
+            ->whereIn('estado', [
+                EstadoOrden::Lanzada->value,
+                EstadoOrden::EnPicking->value,
+                EstadoOrden::Preparada->value,
+            ])
+            ->count();
+
+        $tareasPendientes = TareaPicking::query()
+            ->where('estado', EstadoTarea::Pendiente->value)
+            ->count();
+
         return [
             'lotes_caducan_pronto' => $caducanPronto,
-            'ordenes_en_curso' => 0,
-            'tareas_pendientes' => 0,
+            'ordenes_en_curso' => $ordenesEnCurso,
+            'tareas_pendientes' => $tareasPendientes,
+            // Las incidencias llegan con la PDA (fase 3).
             'incidencias_abiertas' => 0,
         ];
     }
