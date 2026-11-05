@@ -22,4 +22,10 @@ React + Vite, con Three.js para la vista 3D. Contexto general en `../CLAUDE.md`;
 
 ## Comandos
 
-Pendiente de rellenar al generar el proyecto: instalar dependencias, arrancar el servidor de desarrollo, compilar y lanzar los tests.
+Desde `FrontAlmacen/`.
+
+- Instalar dependencias: `npm install`
+- Arrancar en desarrollo: `npm run dev` (http://127.0.0.1:5173)
+- Compilar para producción: `npm run build` · previsualizar: `npm run preview`
+- Linter (ESLint): `npm run lint`
+- Formato (Prettier): `npm run format` · solo comprobar: `npm run format:check`
