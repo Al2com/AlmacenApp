@@ -26,4 +26,12 @@ Pruebas con PHPUnit (o Pest, si se elige) sobre una base MySQL de test, no SQLit
 
 ## Comandos
 
-Pendiente de rellenar al generar el proyecto: arrancar el servidor, migrar y sembrar, lanzar los tests y formatear el código.
+Desde `BackAlmacen/`. Requiere MySQL en marcha (`docker compose up -d db` desde la raíz).
+
+- Instalar dependencias: `composer install`
+- Primera vez: `cp .env.example .env`, rellenar `DB_PASSWORD` y `php artisan key:generate`
+- Arrancar el servidor: `php artisan serve` (http://127.0.0.1:8000)
+- Migrar: `php artisan migrate` · recrear desde cero: `php artisan migrate:fresh`
+- Tests (sobre MySQL, base `almacen_test`): `php artisan test`
+- Formato de código (Pint): `./vendor/bin/pint` · solo comprobar: `./vendor/bin/pint --test`
+- Análisis estático (Larastan): `./vendor/bin/phpstan analyse`
