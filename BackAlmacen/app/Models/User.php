@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Rol;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -45,6 +46,7 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'rol' => Rol::class,
             'activo' => 'boolean',
             'debe_cambiar_password' => 'boolean',
             'ultimo_acceso' => 'datetime',
