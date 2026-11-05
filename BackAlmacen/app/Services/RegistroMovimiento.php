@@ -33,12 +33,13 @@ class RegistroMovimiento
         ?Ubicacion $origen = null,
         ?Ubicacion $destino = null,
         ?string $motivo = null,
+        ?int $tareaPickingId = null,
     ): Movimiento {
         if ($origen === null && $destino === null) {
             throw new ReglaDeDominioException('Un movimiento necesita ubicación de origen o de destino.');
         }
 
-        return DB::transaction(function () use ($tipo, $lote, $cantidad, $usuario, $origen, $destino, $motivo) {
+        return DB::transaction(function () use ($tipo, $lote, $cantidad, $usuario, $origen, $destino, $motivo, $tareaPickingId) {
             if ($origen !== null) {
                 $this->retirarDeOrigen($tipo, $lote, $cantidad, $origen);
             }
@@ -55,6 +56,7 @@ class RegistroMovimiento
                 'cantidad' => $cantidad,
                 'user_id' => $usuario->id,
                 'motivo' => $motivo,
+                'tarea_picking_id' => $tareaPickingId,
             ]);
         });
     }
