@@ -38,3 +38,8 @@ Recreación con Three.js de las posiciones, con los mismos estados y el mismo de
 - Segundo factor de autenticación: fuera de la primera versión, pero la estructura de login no debe impedirlo.
 - Si la tarea de picking referencia el stock con una clave ajena compuesta (lote y ubicación) para que no pueda apuntar a un saldo que no existe. Hoy son dos claves ajenas sueltas.
 - Cuántos días antes del vencimiento se considera «caduca pronto» (provisional: 7, como ajuste).
+
+## Dependencias y auditoría (cierre de Fase 1)
+
+- `npm audit`: 4 vulnerabilidades **moderadas** en la cadena de ESLint (`minimatch` → `@eslint/config-array` → `eslint 10` → `@eslint/js`), un DoS en `minimatch`. Son **solo de herramienta de desarrollo**: ESLint no entra en el bundle de producción. El único arreglo que ofrece npm (`audit fix --force`) degrada ESLint a la 9.x, que no queremos. Se deja como está y se revisa cuando ESLint 10 publique la cadena de dependencias corregida.
+- `composer audit`: pendiente de ejecutar con Composer ≥ 2.4 (el del entorno de desarrollo era 2.2.6, sin el comando `audit`).
