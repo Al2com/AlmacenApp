@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\RecepcionController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,12 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
             Route::get('/fefo', [PanelController::class, 'fefo']);
             Route::get('/movimientos', [PanelController::class, 'movimientos']);
             Route::get('/flujo', [PanelController::class, 'flujo']);
+        });
+
+        // Recepciones: solo admin y operador de recepción.
+        Route::middleware('can:registrar-recepcion')->group(function (): void {
+            Route::get('/recepciones/ubicacion-propuesta', [RecepcionController::class, 'ubicacionPropuesta']);
+            Route::post('/recepciones', [RecepcionController::class, 'store']);
         });
     });
 });

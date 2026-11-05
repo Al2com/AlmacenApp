@@ -72,4 +72,15 @@ class MatrizRolesTest extends TestCase
             $this->actingAs($user)->getJson($endpoint)->assertStatus($vePanel ? 200 : 403);
         }
     }
+
+    #[DataProvider('roles')]
+    public function test_las_recepciones_solo_las_registran_admin_y_recepcion(Rol $rol, bool $gestionaUsuarios, bool $vePanel): void
+    {
+        $registraRecepciones = in_array($rol, [Rol::Admin, Rol::OperadorRecepcion], true);
+        $user = User::factory()->create(['rol' => $rol]);
+
+        $this->actingAs($user)
+            ->getJson('/api/recepciones/ubicacion-propuesta?cantidad=10')
+            ->assertStatus($registraRecepciones ? 200 : 403);
+    }
 }

@@ -29,5 +29,8 @@ class AppServiceProvider extends ServiceProvider
 
         // El panel general es de admin y gestor de inventario (docs/frontend.md).
         Gate::define('ver-panel', fn (User $user): bool => in_array($user->rol, [Rol::Admin, Rol::GestorInventario], true));
+
+        // Las recepciones las registran admin y operador de recepción (docs/diseno.md).
+        Gate::define('registrar-recepcion', fn (User $user): bool => in_array($user->rol, [Rol::Admin, Rol::OperadorRecepcion], true));
     }
 }
