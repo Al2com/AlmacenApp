@@ -21,4 +21,9 @@ class TareaPickingPolicy
     {
         return in_array($user->rol, [Rol::Admin, Rol::OperadorAlmacen], true);
     }
+
+    public function incidencia(User $user, TareaPicking $tarea): bool
+    {
+        return in_array($user->rol, [Rol::Admin, Rol::OperadorAlmacen], true);
+    }
 }

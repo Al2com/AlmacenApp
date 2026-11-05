@@ -520,8 +520,17 @@ th {
   font-weight: 800;
 }
 
+.pda-tarea .campo {
+  text-align: left;
+}
+
 .pda-confirmar {
   width: 100%;
   min-height: 60px;
   font-size: 1.1rem;
+}
+
+.pda-incidencia {
+  width: 100%;
+  margin-top: 0.5rem;
 }
