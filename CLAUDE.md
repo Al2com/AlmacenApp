@@ -47,4 +47,11 @@ El código debe parecer escrito por una persona con criterio, no generado en blo
 
 ## Comandos
 
-Pendiente de rellenar cuando se genere el proyecto Laravel y el de React.
+Entorno completo con Docker (desde la raíz):
+
+- Primera vez: `cp .env.example .env` y rellenar las contraseñas de MySQL (`MYSQL_ROOT_PASSWORD` y `MYSQL_PASSWORD`).
+- Arrancar todo: `docker compose up -d` — MySQL, backend en http://127.0.0.1:8000 y frontend en http://127.0.0.1:5173 (puertos solo en localhost).
+- Parar: `docker compose down` (con `-v` borra también el volumen de datos de MySQL).
+- Ver logs: `docker compose logs -f`.
+
+Los comandos propios de cada parte están en `BackAlmacen/CLAUDE.md` y `FrontAlmacen/CLAUDE.md`.
