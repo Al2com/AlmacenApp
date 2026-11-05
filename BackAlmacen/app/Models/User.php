@@ -8,7 +8,18 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $nombre
+ * @property string $email
+ * @property string $password
+ * @property Rol $rol
+ * @property bool $activo
+ * @property bool $debe_cambiar_password
+ * @property Carbon|null $ultimo_acceso
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
