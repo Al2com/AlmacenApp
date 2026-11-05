@@ -83,4 +83,22 @@ class MatrizRolesTest extends TestCase
             ->getJson('/api/recepciones/ubicacion-propuesta?cantidad=10')
             ->assertStatus($registraRecepciones ? 200 : 403);
     }
+
+    #[DataProvider('roles')]
+    public function test_las_ordenes_solo_las_gestionan_admin_y_produccion(Rol $rol, bool $gestionaUsuarios, bool $vePanel): void
+    {
+        $gestionaOrdenes = in_array($rol, [Rol::Admin, Rol::OperadorProduccion], true);
+        $user = User::factory()->create(['rol' => $rol]);
+
+        $this->actingAs($user)->getJson('/api/ordenes')->assertStatus($gestionaOrdenes ? 200 : 403);
+    }
+
+    #[DataProvider('roles')]
+    public function test_las_tareas_solo_las_ven_admin_y_almacen(Rol $rol, bool $gestionaUsuarios, bool $vePanel): void
+    {
+        $veTareas = in_array($rol, [Rol::Admin, Rol::OperadorAlmacen], true);
+        $user = User::factory()->create(['rol' => $rol]);
+
+        $this->actingAs($user)->getJson('/api/tareas')->assertStatus($veTareas ? 200 : 403);
+    }
 }

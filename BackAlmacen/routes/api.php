@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\OrdenController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\RecepcionController;
+use App\Http\Controllers\TareaController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,5 +35,16 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
             Route::get('/recepciones/ubicacion-propuesta', [RecepcionController::class, 'ubicacionPropuesta']);
             Route::post('/recepciones', [RecepcionController::class, 'store']);
         });
+
+        // Órdenes de producción (permisos por OrdenProduccionPolicy).
+        Route::get('/ordenes', [OrdenController::class, 'index']);
+        Route::post('/ordenes', [OrdenController::class, 'store']);
+        Route::get('/ordenes/{orden}', [OrdenController::class, 'show']);
+        Route::post('/ordenes/{orden}/cancelar', [OrdenController::class, 'cancelar']);
+        Route::post('/ordenes/{orden}/entregar', [OrdenController::class, 'entregar']);
+
+        // Tareas de picking (permisos por TareaPickingPolicy).
+        Route::get('/tareas', [TareaController::class, 'index']);
+        Route::post('/tareas/{tarea}/confirmar', [TareaController::class, 'confirmar']);
     });
 });
