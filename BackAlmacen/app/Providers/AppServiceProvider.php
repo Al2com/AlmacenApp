@@ -32,5 +32,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Las recepciones las registran admin y operador de recepción (docs/diseno.md).
         Gate::define('registrar-recepcion', fn (User $user): bool => in_array($user->rol, [Rol::Admin, Rol::OperadorRecepcion], true));
+
+        // El catálogo de artículos es de consulta para cualquier rol autenticado.
+        Gate::define('ver-catalogo', fn (User $user): bool => true);
     }
 }

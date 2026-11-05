@@ -3,6 +3,7 @@ import { Privada } from './auth/Privada'
 import { Placeholder } from './components/Placeholder'
 import { CambiarPassword } from './pages/cambiar-password/CambiarPassword'
 import { Login } from './pages/login/Login'
+import { Ordenes } from './pages/ordenes/Ordenes'
 import { Panel } from './pages/panel/Panel'
 
 const TODOS = [
@@ -41,7 +42,7 @@ export function App() {
         path="/ordenes"
         element={
           <Privada roles={['admin', 'operador_produccion']}>
-            <Placeholder titulo="Órdenes de producción" />
+            <Ordenes />
           </Privada>
         }
       />

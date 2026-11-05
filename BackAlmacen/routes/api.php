@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ArticuloController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OrdenController;
 use App\Http\Controllers\PanelController;
@@ -46,5 +47,8 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
         // Tareas de picking (permisos por TareaPickingPolicy).
         Route::get('/tareas', [TareaController::class, 'index']);
         Route::post('/tareas/{tarea}/confirmar', [TareaController::class, 'confirmar']);
+
+        // Catálogo de artículos (consulta, cualquier rol).
+        Route::get('/articulos', [ArticuloController::class, 'index']);
     });
 });

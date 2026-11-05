@@ -387,3 +387,82 @@ th {
   color: var(--texto-2);
   padding: 1rem 0;
 }
+
+/* --- Órdenes --- */
+.linea-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.linea-form select,
+.linea-form input {
+  min-height: 44px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.linea-form select {
+  flex: 1;
+}
+
+.linea-form input {
+  width: 90px;
+}
+
+.linea-form .quitar {
+  min-width: 44px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  background: #fff;
+  font-size: 1.1rem;
+}
+
+.orden {
+  margin-bottom: 1rem;
+}
+
+.orden-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.estado {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--linea);
+}
+
+.estado-lanzada {
+  background: #e7ecfb;
+  color: var(--azul);
+}
+.estado-en_picking {
+  background: #fde8d6;
+  color: var(--naranja-texto);
+}
+.estado-preparada {
+  background: var(--pos-ocupada);
+  color: var(--tinta);
+}
+.estado-entregada {
+  background: var(--tinta);
+  color: #fff;
+}
+.estado-cancelada {
+  background: #f1f1f1;
+  color: var(--texto-2);
+}
+
+.acciones {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
