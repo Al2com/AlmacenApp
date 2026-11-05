@@ -20,6 +20,12 @@ class SeleccionFefo
      */
     public function ordenar(Articulo $articulo): array
     {
-        throw new \RuntimeException('Pendiente: se implementa en el paso 4.');
+        return $articulo->lotes()
+            ->orderByRaw('caducidad is null')
+            ->orderBy('caducidad')
+            ->orderBy('fecha_recepcion')
+            ->get()
+            ->values()
+            ->all();
     }
 }
