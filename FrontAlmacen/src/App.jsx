@@ -5,6 +5,7 @@ import { CambiarPassword } from './pages/cambiar-password/CambiarPassword'
 import { Login } from './pages/login/Login'
 import { Ordenes } from './pages/ordenes/Ordenes'
 import { Panel } from './pages/panel/Panel'
+import { Pda } from './pages/pda/Pda'
 
 const TODOS = [
   'admin',
@@ -74,7 +75,7 @@ export function App() {
         path="/pda"
         element={
           <Privada roles={['operador_almacen']}>
-            <Placeholder titulo="PDA" />
+            <Pda />
           </Privada>
         }
       />
