@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ubicacion;
 use App\Services\ConsultaStock;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -9,7 +10,8 @@ use Illuminate\Support\Facades\Gate;
 
 /**
  * Consulta de stock y lotes. Lectura para cualquier rol autenticado (gate
- * «ver-stock»); admite filtrar por artículo y por estado de frescura.
+ * «ver-stock»); admite filtrar por artículo, lote, ubicación y estado de
+ * frescura, y ver el detalle de una posición.
  */
 class StockController extends Controller
 {
@@ -19,9 +21,18 @@ class StockController extends Controller
     {
         Gate::authorize('ver-stock');
 
-        $articuloId = $request->integer('articulo_id') ?: null;
-        $estado = $request->string('estado')->toString() ?: null;
+        return response()->json($this->consulta->listar(
+            $request->integer('articulo_id') ?: null,
+            $request->string('estado')->toString() ?: null,
+            $request->integer('ubicacion_id') ?: null,
+            $request->string('lote')->toString() ?: null,
+        ));
+    }
 
-        return response()->json($this->consulta->listar($articuloId, $estado));
+    public function posicion(Ubicacion $ubicacion): JsonResponse
+    {
+        Gate::authorize('ver-stock');
+
+        return response()->json($this->consulta->posicion($ubicacion));
     }
 }

@@ -41,5 +41,9 @@ class AppServiceProvider extends ServiceProvider
 
         // El stock es de consulta para cualquier rol autenticado (docs/frontend.md).
         Gate::define('ver-stock', fn (User $user): bool => true);
+
+        // El inventario (ajustes, traslados, bajas y reservas) lo gestionan
+        // admin y gestor de inventario (docs/diseno.md).
+        Gate::define('gestionar-inventario', fn (User $user): bool => in_array($user->rol, [Rol::Admin, Rol::GestorInventario], true));
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ArticuloController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\OrdenController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\PlanoController;
@@ -59,5 +60,15 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
 
         // Consulta de stock y lotes (cualquier rol).
         Route::get('/stock', [StockController::class, 'index']);
+        Route::get('/stock/posicion/{ubicacion}', [StockController::class, 'posicion']);
+
+        // Inventario: solo admin y gestor de inventario.
+        Route::middleware('can:gestionar-inventario')->prefix('inventario')->group(function (): void {
+            Route::post('/ajustes', [InventarioController::class, 'regularizarStock']);
+            Route::post('/traslados', [InventarioController::class, 'trasladarStock']);
+            Route::post('/bajas', [InventarioController::class, 'darDeBaja']);
+            Route::post('/reservas', [InventarioController::class, 'reservar']);
+            Route::post('/reservas/liberar', [InventarioController::class, 'liberar']);
+        });
     });
 });

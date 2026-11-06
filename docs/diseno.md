@@ -47,6 +47,14 @@ Para empezar, confirmar el picking descuenta el material (`consumo`). Más adela
 3. Pantalla de PDA para el operador de almacén.
 4. Vista 3D con Three.js.
 
+## Decisiones de implementación (inventario)
+
+- **Traslado**: mueve solo la **cantidad disponible** (`cantidad` − `cantidad_reservada`), nunca lo reservado, y a una ubicación **activa** con capacidad y hueco de lote. No cambia la fecha de entrada del lote.
+- **Caducado**: un lote caducado **no se consume ni se traslada**; solo se da de baja.
+- **Regularización (ajuste)**: corrige el saldo contado de un lote **que ya está** en esa ubicación; exige motivo, no deja la cantidad por debajo de lo reservado ni en negativo y **no pasa por la capacidad** de la ubicación (es una corrección de lo que hay, no una colocación nueva). Genera un movimiento de tipo `ajuste` (origen si baja, destino si sube).
+- **Reservas**: solo cambian `cantidad_reservada`, **no son movimientos**. Se reparten por FEFO (saltando caducados) y bloquean las filas; una segunda reserva solo ve lo que quedó disponible. Se pueden liberar.
+- **Cámara refrigerada**: se modela con `ubicaciones.tipo = 'refrigerado'` (las normales son `'estante'`). De momento es solo organizativa/visual; no hay regla que obligue a un artículo a ir en frío.
+
 ## Límites conocidos
 
 - La capacidad se mide en unidades, así que mezcla artículos de tamaños distintos. Una mejora posible es medirla en huecos de palé o en volumen.

@@ -118,4 +118,17 @@ class MatrizRolesTest extends TestCase
 
         $this->actingAs($user)->getJson('/api/stock')->assertOk();
     }
+
+    #[DataProvider('roles')]
+    public function test_el_inventario_lo_gestionan_admin_y_gestor(Rol $rol, bool $gestionaUsuarios, bool $vePanel): void
+    {
+        $gestionaInventario = in_array($rol, [Rol::Admin, Rol::GestorInventario], true);
+        $user = User::factory()->create(['rol' => $rol]);
+
+        // Cuerpo vacío: si tiene permiso pasa el gate y falla la validación (422);
+        // si no, el gate lo corta antes con 403.
+        $respuesta = $this->actingAs($user)->postJson('/api/inventario/ajustes', []);
+
+        $respuesta->assertStatus($gestionaInventario ? 422 : 403);
+    }
 }
