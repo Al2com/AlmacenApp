@@ -109,14 +109,25 @@ export function Plano() {
     }
   }, [esAdmin])
 
-  const pasillos = useMemo(
+  // Clave estable de los pasillos: el refresco cada 5 s (y tras cada pick de la
+  // demostración) crea un array de posiciones nuevo, pero los pasillos son los
+  // mismos. Memorizar por esta clave evita que `pasillos` cambie de identidad
+  // en cada refresco y, con ello, que la cámara se recoloque sola y deshaga el
+  // giro que esté haciendo el usuario.
+  const pasillosKey = useMemo(
     () =>
       [
         ...new Set(
           posiciones.filter((p) => !p.refrigerado).map((p) => p.pasillo)
         ),
-      ].sort((a, b) => a - b),
+      ]
+        .sort((a, b) => a - b)
+        .join(','),
     [posiciones]
+  )
+  const pasillos = useMemo(
+    () => (pasillosKey ? pasillosKey.split(',').map(Number) : []),
+    [pasillosKey]
   )
   const zCamara = pasillos.length * PASO_PASILLO + 1.5
   const reducida = useMemo(() => prefiereSinMovimiento(), [])
