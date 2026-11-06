@@ -51,5 +51,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Límite propio del feed, que el front consulta cada pocos segundos.
         RateLimiter::for('actividad', fn (Request $request): Limit => Limit::perMinute(60)->by((string) $request->user()?->getAuthIdentifier()));
+
+        // El modo demostración es solo del admin y nunca en producción.
+        Gate::define('usar-demostracion', fn (User $user): bool => $user->rol === Rol::Admin && ! app()->environment('production'));
     }
 }

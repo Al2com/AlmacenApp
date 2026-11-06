@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActividadController;
 use App\Http\Controllers\ArticuloController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DemostracionController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\OrdenController;
 use App\Http\Controllers\PanelController;
@@ -76,6 +77,12 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
             Route::post('/bajas', [InventarioController::class, 'darDeBaja']);
             Route::post('/reservas', [InventarioController::class, 'reservar']);
             Route::post('/reservas/liberar', [InventarioController::class, 'liberar']);
+        });
+
+        // Modo demostración: solo admin, nunca en producción.
+        Route::middleware('can:usar-demostracion')->prefix('demostracion')->group(function (): void {
+            Route::get('/estado', [DemostracionController::class, 'estado']);
+            Route::post('/confirmar', [DemostracionController::class, 'confirmar']);
         });
     });
 });

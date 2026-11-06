@@ -139,4 +139,12 @@ class MatrizRolesTest extends TestCase
 
         $respuesta->assertStatus($gestionaInventario ? 422 : 403);
     }
+
+    #[DataProvider('roles')]
+    public function test_la_demostracion_solo_la_usa_el_admin(Rol $rol, bool $gestionaUsuarios, bool $vePanel): void
+    {
+        $user = User::factory()->create(['rol' => $rol]);
+
+        $this->actingAs($user)->getJson('/api/demostracion/estado')->assertStatus($rol === Rol::Admin ? 200 : 403);
+    }
 }
