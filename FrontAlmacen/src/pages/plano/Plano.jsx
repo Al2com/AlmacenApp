@@ -22,18 +22,28 @@ export function Plano() {
 
   useEffect(() => {
     let activo = true
-    ;(async () => {
+
+    async function cargar(inicial) {
       try {
         const datos = await cargarEstanteria()
-        if (activo) setPosiciones(datos)
+        if (activo) {
+          setPosiciones(datos)
+          setError(false)
+        }
       } catch {
-        if (activo) setError(true)
+        if (activo && inicial) setError(true)
       } finally {
-        if (activo) setCargando(false)
+        if (activo && inicial) setCargando(false)
       }
-    })()
+    }
+
+    cargar(true)
+    // Se refresca cada 5 s para reflejar en vivo lo que se reserva (pedidos) y
+    // lo que se consume (picking en la PDA).
+    const id = setInterval(() => cargar(false), 5000)
     return () => {
       activo = false
+      clearInterval(id)
     }
   }, [])
 
