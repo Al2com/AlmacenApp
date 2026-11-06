@@ -31,6 +31,7 @@ Los permisos se comprueban siempre en el backend (policies de Laravel). Ocultar 
 - Orden de producción: `lanzada`, `en_picking`, `preparada`, `entregada`, `cancelada`.
 - Tarea de picking: `pendiente`, `confirmada`, `incidencia`.
 - Movimiento: `recepcion`, `consumo`, `traslado`, `ajuste`, `baja`.
+- Posición de estantería (panel y plano): `libre`, `ocupada`, `caduca_pronto`, `caducada`, `reservada`, `en_picking`, `recogida`. Una caducidad manda siempre; dentro de las reservadas, la primera tarea pendiente de cada orden activa (`lanzada` o `en_picking`) se marca `en_picking` y el resto `reservada`; al confirmarse, pasa a `recogida` durante una ventana corta (`segundos_recogida`, ajuste) y luego cae a su estado normal. Detalle en `docs/frontend.md`.
 
 Para empezar, confirmar el picking descuenta el material (`consumo`). Más adelante se puede hacer más fiel a la realidad: el picking genera un `traslado` a una ubicación de producción y el consumo ocurre después.
 
@@ -66,6 +67,10 @@ El detalle del orden está en `docs/plan.md`.
 - **Regularización (ajuste)**: corrige el saldo contado de un lote **que ya está** en esa ubicación; exige motivo, no deja la cantidad por debajo de lo reservado ni en negativo y **no pasa por la capacidad** de la ubicación (es una corrección de lo que hay, no una colocación nueva). Genera un movimiento de tipo `ajuste` (origen si baja, destino si sube).
 - **Reservas**: solo cambian `cantidad_reservada`, **no son movimientos**. Se reparten por FEFO (saltando caducados) y bloquean las filas; una segunda reserva solo ve lo que quedó disponible. Se pueden liberar.
 - **Cámara refrigerada**: se modela con `ubicaciones.tipo = 'refrigerado'` (las normales son `'estante'`). De momento es solo organizativa/visual; no hay regla que obligue a un artículo a ir en frío.
+
+## Datos de demostración
+
+`php artisan almacen:demo` llena el almacén para enseñar la aplicación en marcha: 25 artículos, el 85-90 % de las posiciones ocupadas (lotes con fechas variadas: la mayoría en buen estado, algunos que caducan en menos de 7 días y un par ya caducados) y un pedido largo (25 líneas, una por artículo) ya lanzado, con dos líneas sin stock suficiente para ver la preparación parcial. Es determinista (sin Faker ni azar): siempre deja el mismo resultado. **Se niega a ejecutarse si `APP_ENV=production`.**
 
 ## Límites conocidos
 

@@ -29,7 +29,11 @@ Estados de una posición de estantería (siempre con símbolo además de color, 
 | Ocupada | `#8FA6F2` | ninguno |
 | Caduca en 7 días o menos | `#FF8A3D` | `!` |
 | Caducada | rayado rojo oscuro | `×` |
-| Reservada para picking | `#1B2D5E` con borde claro | `R` |
+| Reservada para una orden | `#1B2D5E` con borde claro | `R` |
+| En picking (la siguiente tarea de su orden) | `#2447D6` | `▶` |
+| Recogida (justo tras confirmarse) | `#3F9142` | `✓` |
+
+Una caducidad manda siempre sobre el resto: una posición reservada o en picking cuyo lote caduca pronto se muestra como «caduca pronto», no como reservada. «Recogida» dura unos segundos (ajuste `segundos_recogida`) y luego la posición vuelve a su estado normal (libre si se vació del todo). El detalle de una posición muestra, por cada lote: artículo, cantidad total, cuánto está reservado y para qué orden (o varias, si hay más de una), lo disponible ahora y lo que quedará una vez se recoja la reserva.
 
 Reglas generales: zonas táctiles de al menos 44 px, foco visible con teclado, contraste de texto 4.5:1, gráficos con leyenda y valor al pasar el cursor. Los 7 días del aviso de caducidad deben ser un ajuste, no un número escrito en el código.
 

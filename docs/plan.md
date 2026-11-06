@@ -41,6 +41,13 @@ Un único archivo de configuración con las medidas del almacén (ancho de pasil
 
 Fase final, apoyada en las dos anteriores. Recreación con Three.js con estanterías realistas (montantes, largueros, cajas o palés) y los mismos estados y detalle que la 2D, pasillos anchos a escala según la configuración de la fase 5, cámara orbital con zoom y botón para centrar en un pasillo, instancias (`InstancedMesh`) para ir fluido con cientos de posiciones, y el resaltado de la posición afectada cuando llega una operación del feed de la fase 4. La 2D accesible sigue siendo la alternativa.
 
+## Herramientas de demostración
+
+Para enseñar la aplicación en marcha (no es una fase de construcción, es una ayuda para probar y demostrar):
+
+- `php artisan almacen:demo`: llena el almacén y lanza un pedido largo. Solo en local; detalle en `docs/diseno.md`.
+- Estados de posición ampliados (`en_picking`, `recogida`) y el detalle con «para qué orden» y «lo que queda tras recoger»: `docs/frontend.md`.
+
 ## Decisiones abiertas
 
 - Segundo factor de autenticación: fuera de la primera versión, pero la estructura de login no debe impedirlo.

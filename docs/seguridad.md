@@ -32,6 +32,7 @@ Borrador 1 (5 de noviembre de 2026). Es un proyecto de formación, pero se const
 - El `.env` no se sube nunca; el repositorio solo lleva `.env.example` sin valores reales.
 - La aplicación se conecta a MySQL con un usuario propio con los permisos justos, no con `root`. El puerto de MySQL no se expone fuera de la máquina.
 - Las copias de seguridad de la base de datos no se guardan dentro del repositorio.
+- El comando de datos de demostración (`almacen:demo`) se niega a ejecutarse si `APP_ENV=production`. Lo mismo vale para cualquier modo demostración del front: sus rutas y su usuario operador van siempre detrás de la policy de admin y no se activan en producción.
 
 ## Front
 
