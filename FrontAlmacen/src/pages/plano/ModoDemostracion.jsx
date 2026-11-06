@@ -15,7 +15,7 @@ const ETIQUETA_FASE = {
  * useOperarioVirtual). Pausar, acelerar y reiniciar son controles de la
  * animación; no deshacen ninguna confirmación ya hecha.
  */
-export function ModoDemostracion({ demo }) {
+export function ModoDemostracion({ demo, seguir, onSeguir }) {
   const {
     activa,
     pausada,
@@ -71,6 +71,14 @@ export function ModoDemostracion({ demo }) {
             onClick={reiniciar}
           >
             reiniciar recorrido
+          </button>
+          <button
+            type="button"
+            className={`boton boton-secundario${seguir ? ' activo' : ''}`}
+            aria-pressed={seguir}
+            onClick={onSeguir}
+          >
+            {seguir ? 'vista libre' : 'seguir al operario'}
           </button>
         </div>
       )}

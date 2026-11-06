@@ -87,6 +87,11 @@ button {
   border: 1.5px solid var(--tinta);
 }
 
+.boton-secundario.activo {
+  background: var(--tinta);
+  color: #fff;
+}
+
 .campo {
   display: flex;
   flex-direction: column;

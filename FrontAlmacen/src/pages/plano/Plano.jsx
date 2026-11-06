@@ -1,5 +1,5 @@
 import { OrbitControls, Stats } from '@react-three/drei'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { actividad } from '../../api/panel'
 import { estanteria as cargarEstanteria } from '../../api/plano'
@@ -29,6 +29,8 @@ export function Plano() {
   const [seleccion, setSeleccion] = useState(null)
   const [foco, setFoco] = useState(null)
   const [resaltada, setResaltada] = useState(null)
+  const [seguir, setSeguir] = useState(false)
+  const posOperario = useRef(null)
 
   // Refresco silencioso (lo usa también el modo demostración tras confirmar
   // una tarea, para ver la caja cambiar al momento sin esperar al sondeo).
@@ -142,13 +144,22 @@ export function Plano() {
         contenido. Centra un pasillo para ver el número de cada bahía.
       </p>
 
-      {esAdmin && <ModoDemostracion demo={demo} />}
+      {esAdmin && (
+        <ModoDemostracion
+          demo={demo}
+          seguir={seguir}
+          onSeguir={() => setSeguir((s) => !s)}
+        />
+      )}
 
       <div className="pasillos" role="group" aria-label="Centrar en un pasillo">
         <button
           type="button"
           className={foco == null ? 'activo' : undefined}
-          onClick={() => setFoco(null)}
+          onClick={() => {
+            setFoco(null)
+            setSeguir(false)
+          }}
         >
           todo
         </button>
@@ -157,7 +168,10 @@ export function Plano() {
             key={numero}
             type="button"
             className={foco === numero ? 'activo' : undefined}
-            onClick={() => setFoco(numero)}
+            onClick={() => {
+              setFoco(numero)
+              setSeguir(false)
+            }}
           >
             pasillo {numero}
           </button>
@@ -186,9 +200,15 @@ export function Plano() {
               cargadas={demo.cargadas}
               escalera={demo.escalera}
               inicio={demo.inicio}
+              posicionRef={posOperario}
             />
           )}
-          <ControlCamara foco={foco} pasillos={pasillos} />
+          <ControlCamara
+            foco={foco}
+            pasillos={pasillos}
+            seguir={seguir && demo.activa}
+            posicionRef={posOperario}
+          />
         </Canvas>
       </div>
 
@@ -207,13 +227,13 @@ export function Plano() {
   )
 }
 
-function ControlCamara({ foco, pasillos }) {
+function ControlCamara({ foco, pasillos, seguir, posicionRef }) {
   const ref = useRef()
   const { camera } = useThree()
 
   useEffect(() => {
     const control = ref.current
-    if (!control) return
+    if (!control || seguir) return
     const centro = (pasillos.length * PASO_PASILLO) / 2
     if (foco == null) {
       control.target.set(0, 1, centro)
@@ -224,7 +244,18 @@ function ControlCamara({ foco, pasillos }) {
       camera.position.set(9, 6, z + 10)
     }
     control.update()
-  }, [foco, pasillos, camera])
+  }, [foco, pasillos, camera, seguir])
+
+  // Con «seguir» activo, la cámara acompaña al operario manteniendo el ángulo
+  // actual (se puede seguir orbitando alrededor de él).
+  useFrame((_, delta) => {
+    const control = ref.current
+    if (!seguir || !control || !posicionRef?.current) return
+    const offset = camera.position.clone().sub(control.target)
+    control.target.lerp(posicionRef.current, Math.min(1, delta * 4))
+    camera.position.copy(control.target).add(offset)
+    control.update()
+  })
 
   return <OrbitControls ref={ref} enablePan={false} makeDefault />
 }
