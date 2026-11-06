@@ -8,6 +8,7 @@ use App\Models\Articulo;
 use App\Models\Lote;
 use App\Models\Ubicacion;
 use App\Models\User;
+use App\Services\LanzarOrden;
 use App\Services\RegistroMovimiento;
 use Illuminate\Database\Seeder;
 
@@ -218,6 +219,17 @@ class DatabaseSeeder extends Seeder
         $servicio->registrar(TipoMovimiento::Consumo, $amoxicilinaPrimero, 20, $almacen, origen: $ubAmoxicilinaPrimero);
         $servicio->registrar(TipoMovimiento::Traslado, $meloxicamLote, 70, $almacen, origen: $ubMeloxicam, destino: $intercaladas[$siguienteLibre++]);
         $servicio->registrar(TipoMovimiento::Baja, $ivermectinaVencida, 25, $gestor, origen: $ubIvermectinaVencida, motivo: 'caducado');
+
+        // Orden ya lanzada, lista para picar en la PDA: reserva por FEFO y genera
+        // tareas que recorren varios pasillos. Así la demo arranca sin crearla a mano.
+        $porCodigo = fn (string $codigo) => Articulo::where('codigo', $codigo)->firstOrFail();
+        (new LanzarOrden)->lanzar($usuarios[Rol::OperadorProduccion->value], 'OP-DEMO-1', [
+            ['articulo' => $porCodigo('AMX-001'), 'cantidad' => 30],
+            ['articulo' => $porCodigo('SUERO-001'), 'cantidad' => 40],
+            ['articulo' => $porCodigo('CALC-001'), 'cantidad' => 20],
+            ['articulo' => $porCodigo('DESP-001'), 'cantidad' => 25],
+            ['articulo' => $porCodigo('ADE-001'), 'cantidad' => 20],
+        ]);
     }
 
     private function lote(Articulo $articulo, string $codigo, string $recepcion, string $caducidad): Lote
