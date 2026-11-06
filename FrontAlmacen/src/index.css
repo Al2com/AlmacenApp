@@ -923,7 +923,15 @@ th {
   font-weight: 800;
   font-stretch: 112%;
   color: var(--azul);
-  margin: 0.2rem 0 1rem;
+  margin: 0.2rem 0 0.1rem;
+}
+
+.pda-ruta {
+  display: block;
+  color: var(--texto-2);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
 }
 
 .pda-datos {

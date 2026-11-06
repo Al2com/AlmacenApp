@@ -90,8 +90,12 @@ function TareaActual({ tarea, alResolver }) {
 
   return (
     <form className="tarjeta pda-tarea" onSubmit={confirmar}>
-      <span className="pda-etiqueta">ve a</span>
+      <span className="pda-etiqueta">ve a la posición</span>
       <span className="pda-ubicacion">{tarea.ubicacion}</span>
+      <span className="pda-ruta">
+        pasillo {tarea.pasillo} · estantería {tarea.estanteria} · nivel{' '}
+        {tarea.nivel}
+      </span>
 
       <dl className="pda-datos">
         <div>
