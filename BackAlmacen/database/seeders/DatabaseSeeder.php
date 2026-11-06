@@ -93,43 +93,43 @@ class DatabaseSeeder extends Seeder
             return $ubicacion;
         };
 
-        // Harina: un lote caducado (queda a la espera de baja), uno que caduca
-        // pronto y uno válido; sirve para ver el FEFO dentro de un artículo.
-        $harina = Articulo::factory()->create(['codigo' => 'HAR-001', 'nombre' => 'Harina de trigo', 'unidad' => 'kg']);
-        $recibir($this->lote($harina, 'HAR-2609', '2026-09-20', '2026-10-25'), 50);
-        $recibir($this->lote($harina, 'HAR-2610', '2026-10-28', '2026-11-09'), 80);
-        $harinaValida = $this->lote($harina, 'HAR-2611', '2026-11-02', '2027-02-01');
-        $ubHarinaValida = $recibir($harinaValida, 100);
+        // Suministros veterinarios. Vacuna: un lote caducado (a la espera de baja),
+        // uno que caduca pronto y uno válido; sirve para ver el FEFO dentro de un artículo.
+        $vacuna = Articulo::factory()->create(['codigo' => 'VAC-001', 'nombre' => 'Vacuna polivalente ovino', 'unidad' => 'dosis']);
+        $recibir($this->lote($vacuna, 'VAC-2609', '2026-09-20', '2026-10-25'), 50);
+        $recibir($this->lote($vacuna, 'VAC-2610', '2026-10-28', '2026-11-09'), 80);
+        $vacunaValida = $this->lote($vacuna, 'VAC-2611', '2026-11-02', '2027-02-01');
+        $ubVacunaValida = $recibir($vacunaValida, 100);
 
-        // Azúcar: dos lotes válidos.
-        $azucar = Articulo::factory()->create(['codigo' => 'AZU-001', 'nombre' => 'Azúcar blanca', 'unidad' => 'kg']);
-        $azucarPrimero = $this->lote($azucar, 'AZU-2610', '2026-10-15', '2026-12-15');
-        $ubAzucarPrimero = $recibir($azucarPrimero, 60);
-        $recibir($this->lote($azucar, 'AZU-2611', '2026-11-01', '2027-01-20'), 90);
+        // Amoxicilina inyectable: dos lotes válidos.
+        $amoxicilina = Articulo::factory()->create(['codigo' => 'AMX-001', 'nombre' => 'Amoxicilina 150 mg/ml inyectable', 'unidad' => 'vial']);
+        $amoxicilinaPrimero = $this->lote($amoxicilina, 'AMX-2610', '2026-10-15', '2026-12-15');
+        $ubAmoxicilinaPrimero = $recibir($amoxicilinaPrimero, 60);
+        $recibir($this->lote($amoxicilina, 'AMX-2611', '2026-11-01', '2027-01-20'), 90);
 
-        // Leche en polvo: uno que caduca pronto y otro ya caducado que se da de baja.
-        $leche = Articulo::factory()->create(['codigo' => 'LEC-001', 'nombre' => 'Leche en polvo', 'unidad' => 'kg']);
-        $recibir($this->lote($leche, 'LEC-2610', '2026-10-25', '2026-11-10'), 40);
-        $lecheVencida = $this->lote($leche, 'LEC-2609', '2026-09-01', '2026-10-30');
-        $ubLecheVencida = $recibir($lecheVencida, 25);
+        // Ivermectina: uno que caduca pronto y otro ya caducado que se da de baja.
+        $ivermectina = Articulo::factory()->create(['codigo' => 'IVE-001', 'nombre' => 'Ivermectina 1% inyectable', 'unidad' => 'vial']);
+        $recibir($this->lote($ivermectina, 'IVE-2610', '2026-10-25', '2026-11-10'), 40);
+        $ivermectinaVencida = $this->lote($ivermectina, 'IVE-2609', '2026-09-01', '2026-10-30');
+        $ubIvermectinaVencida = $recibir($ivermectinaVencida, 25);
 
-        // Aceite: un lote válido que luego se traslada a otra ubicación.
-        $aceite = Articulo::factory()->create(['codigo' => 'ACE-001', 'nombre' => 'Aceite de girasol', 'unidad' => 'l']);
-        $aceiteLote = $this->lote($aceite, 'ACE-2610', '2026-10-20', '2027-03-01');
-        $ubAceite = $recibir($aceiteLote, 70);
+        // Meloxicam: un lote válido que luego se traslada a otra ubicación.
+        $meloxicam = Articulo::factory()->create(['codigo' => 'MEL-001', 'nombre' => 'Meloxicam 20 mg/ml', 'unidad' => 'vial']);
+        $meloxicamLote = $this->lote($meloxicam, 'MEL-2610', '2026-10-20', '2027-03-01');
+        $ubMeloxicam = $recibir($meloxicamLote, 70);
 
-        // Artículos sin caducidad.
-        $tornillos = Articulo::factory()->sinCaducidad()->create(['codigo' => 'TOR-001', 'nombre' => 'Tornillo M6', 'unidad' => 'ud']);
-        $recibir(Lote::factory()->for($tornillos)->sinCaducidad()->create(['codigo_lote' => 'TOR-0001', 'fecha_recepcion' => '2026-10-10']), 100);
+        // Fungibles sin caducidad.
+        $jeringas = Articulo::factory()->sinCaducidad()->create(['codigo' => 'JER-001', 'nombre' => 'Jeringa desechable 5 ml', 'unidad' => 'ud']);
+        $recibir(Lote::factory()->for($jeringas)->sinCaducidad()->create(['codigo_lote' => 'JER-0001', 'fecha_recepcion' => '2026-10-10']), 100);
 
-        $etiquetas = Articulo::factory()->sinCaducidad()->create(['codigo' => 'ETI-001', 'nombre' => 'Etiqueta adhesiva', 'unidad' => 'ud']);
-        $recibir(Lote::factory()->for($etiquetas)->sinCaducidad()->create(['codigo_lote' => 'ETI-0001', 'fecha_recepcion' => '2026-10-12']), 100);
+        $guantes = Articulo::factory()->sinCaducidad()->create(['codigo' => 'GUA-001', 'nombre' => 'Guantes de nitrilo talla M', 'unidad' => 'ud']);
+        $recibir(Lote::factory()->for($guantes)->sinCaducidad()->create(['codigo_lote' => 'GUA-0001', 'fecha_recepcion' => '2026-10-12']), 100);
 
         // Salidas: dos consumos, un traslado interno y una baja por caducidad.
-        $servicio->registrar(TipoMovimiento::Consumo, $harinaValida, 30, $almacen, origen: $ubHarinaValida);
-        $servicio->registrar(TipoMovimiento::Consumo, $azucarPrimero, 20, $almacen, origen: $ubAzucarPrimero);
-        $servicio->registrar(TipoMovimiento::Traslado, $aceiteLote, 70, $almacen, origen: $ubAceite, destino: $ubicaciones[$siguienteLibre++]);
-        $servicio->registrar(TipoMovimiento::Baja, $lecheVencida, 25, $gestor, origen: $ubLecheVencida, motivo: 'caducado');
+        $servicio->registrar(TipoMovimiento::Consumo, $vacunaValida, 30, $almacen, origen: $ubVacunaValida);
+        $servicio->registrar(TipoMovimiento::Consumo, $amoxicilinaPrimero, 20, $almacen, origen: $ubAmoxicilinaPrimero);
+        $servicio->registrar(TipoMovimiento::Traslado, $meloxicamLote, 70, $almacen, origen: $ubMeloxicam, destino: $ubicaciones[$siguienteLibre++]);
+        $servicio->registrar(TipoMovimiento::Baja, $ivermectinaVencida, 25, $gestor, origen: $ubIvermectinaVencida, motivo: 'caducado');
     }
 
     private function lote(Articulo $articulo, string $codigo, string $recepcion, string $caducidad): Lote
