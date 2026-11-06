@@ -1,4 +1,4 @@
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, Stats } from '@react-three/drei'
 import { Canvas, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { actividad } from '../../api/panel'
@@ -108,7 +108,7 @@ export function Plano() {
       <h1>plano del almacén</h1>
       <p className="pda-progreso">
         Arrastra para girar, rueda para acercar. Pulsa una posición para ver su
-        contenido.
+        contenido. Centra un pasillo para ver el número de cada bahía.
       </p>
 
       <div className="pasillos" role="group" aria-label="Centrar en un pasillo">
@@ -133,12 +133,15 @@ export function Plano() {
 
       <div className="plano-escena">
         <Canvas camera={{ position: [13, 10, 20], fov: 50 }}>
-          <ambientLight intensity={0.75} />
+          {import.meta.env.DEV && <Stats />}
+          <ambientLight intensity={0.6} />
+          <hemisphereLight args={['#ffffff', '#5b6472', 0.5]} />
           <directionalLight position={[8, 14, 10]} intensity={1} />
           <Estanteria3D
             posiciones={posiciones}
             seleccion={seleccion}
             resaltada={resaltada}
+            foco={foco}
             onSeleccion={setSeleccion}
           />
           <ControlCamara foco={foco} pasillos={pasillos} />
@@ -170,7 +173,7 @@ function ControlCamara({ foco, pasillos }) {
     const centro = (pasillos.length * PASO_PASILLO) / 2
     if (foco == null) {
       control.target.set(0, 1, centro)
-      camera.position.set(13, 10, centro + 18)
+      camera.position.set(15, 11, centro + 21)
     } else {
       const z = pasillos.indexOf(foco) * PASO_PASILLO
       control.target.set(0, 1, z)

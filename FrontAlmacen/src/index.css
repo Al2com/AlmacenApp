@@ -1172,3 +1172,23 @@ th {
   background: #d6eef7;
   color: #1a6b86;
 }
+
+.plano-label-bahia {
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  background: rgba(14, 27, 46, 0.85);
+  color: #fff;
+}
+
+.plano-label-nivel {
+  font-size: 0.7rem;
+  background: rgba(14, 27, 46, 0.85);
+  color: #fff;
+}
+
+.plano-label-alcance {
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--texto-2);
+}

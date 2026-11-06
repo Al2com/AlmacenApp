@@ -1,11 +1,13 @@
 import { Html, Instance, Instances } from '@react-three/drei'
 import {
   ALMACEN,
+  ALTURA_SUELO,
   ANCHO_RACK,
   CENTRO_BAHIA,
   PASO_PASILLO,
   POSTE_X,
   PROF_RACK,
+  Y_ALTURA_ALCANZABLE,
 } from '../config/almacen'
 import { estado } from '../estados'
 
@@ -16,16 +18,24 @@ const ETIQUETA_X = -(ANCHO_RACK / 2 + 1)
 // Colores del rack (docs/frontend.md): montantes azules, largueros naranjas.
 const MONTANTE = '#2447d6'
 const LARGUERO = '#e8590c'
+const BALDA = '#9aa3ad'
 const SUELO = '#cfd4da'
 const CRISTAL = '#bfe3ef'
+const ZONA_RECEPCION = '#2447d6'
+const ZONA_PRODUCCION = '#e8590c'
 
-// Recrea el almacén: un rack por pasillo en paralelo, con el hueco del pasillo
-// entre medias, y una cámara refrigerada al fondo. Las cajas se dibujan con
-// instancias (InstancedMesh) para ir fluidas con cientos de posiciones.
+/**
+ * Recrea el almacén: un rack por pasillo en paralelo (con baldas por nivel,
+ * montantes y largueros), el hueco del pasillo entre medias, rótulos de
+ * pasillo/bahía/nivel, una cámara refrigerada al fondo y las zonas de
+ * recepción y producción en los extremos. Las cajas se dibujan con instancias
+ * (InstancedMesh) para ir fluidas con cientos de posiciones.
+ */
 export function Estanteria3D({
   posiciones,
   seleccion,
   resaltada,
+  foco,
   onSeleccion,
 }) {
   const normales = posiciones.filter((p) => !p.refrigerado)
@@ -57,14 +67,19 @@ export function Estanteria3D({
 
   return (
     <group>
-      <Suelo hastaZ={zCamara} />
+      <Suelo hastaZ={zCamara} numPasillos={pasillos.length} />
+      <ZonaExtremo tipo="recepción" z={-2.6} color={ZONA_RECEPCION} />
+      <ZonaExtremo
+        tipo="producción"
+        z={zCamara + 2.6}
+        color={ZONA_PRODUCCION}
+      />
+      <LineaAlcanzable hastaZ={zCamara} />
 
       {pasillos.map((numero, indice) => (
         <group key={numero} position={[0, 0, indice * PASO_PASILLO]}>
-          <Rack />
-          <Html position={[ETIQUETA_X, 2.6, 0]} center distanceFactor={14}>
-            <span className="plano-label">pasillo {numero}</span>
-          </Html>
+          <Rack mostrarBahias={foco === numero} />
+          <RotulosPasillo numero={numero} />
         </group>
       ))}
 
@@ -171,11 +186,17 @@ function SalaFria({ info }) {
   )
 }
 
+/**
+ * Montantes, largueros y una balda sólida en cada nivel (para que se
+ * distinga, en vez de una simple línea). Con el foco puesto en este pasillo,
+ * además numera sus bahías.
+ */
 function Rack({
   postX = POSTE_X,
   ancho = ANCHO_RACK,
   niveles = ALMACEN.niveles,
   prof = PROF_RACK,
+  mostrarBahias = false,
 }) {
   const postes = [
     [-postX, prof],
@@ -183,7 +204,8 @@ function Rack({
     [-postX, -prof],
     [postX, -prof],
   ]
-  const alturas = Array.from({ length: niveles + 1 }, (_, i) => -0.55 + i * SY)
+  const baseNivel = (n) => -0.55 + n * SY
+  const alturas = Array.from({ length: niveles + 1 }, (_, i) => baseNivel(i))
   const alto = niveles * SY + 1
   const postY = -0.55 + (niveles * SY) / 2
 
@@ -203,15 +225,124 @@ function Rack({
           </mesh>
         ))
       )}
+      {/* Balda: panel sólido bajo las cajas de cada nivel, para que se note
+          que es una balda y no solo dos barras. */}
+      {Array.from({ length: niveles }, (_, i) => i).map((i) => (
+        <mesh key={`b-${i}`} position={[0, baseNivel(i) + 0.03, 0]}>
+          <boxGeometry args={[ancho, 0.06, prof * 2]} />
+          <meshStandardMaterial color={BALDA} />
+        </mesh>
+      ))}
+      {mostrarBahias &&
+        Array.from({ length: ALMACEN.bahias }, (_, i) => i + 1).map((bahia) => (
+          <Html
+            key={`bahia-${bahia}`}
+            position={[(bahia - CENTRO_BAHIA) * SX, -0.55, prof + 0.05]}
+            center
+            distanceFactor={8}
+          >
+            <span className="plano-label plano-label-bahia">
+              {String(bahia).padStart(2, '0')}
+            </span>
+          </Html>
+        ))}
+      <NivelLabels postX={postX} prof={prof} niveles={niveles} />
     </group>
   )
 }
 
-function Suelo({ hastaZ }) {
+function NivelLabels({ postX, prof, niveles }) {
   return (
-    <mesh position={[0, -0.75, hastaZ / 2]} rotation={[-Math.PI / 2, 0, 0]}>
-      <planeGeometry args={[20, hastaZ + 5]} />
-      <meshStandardMaterial color={SUELO} />
-    </mesh>
+    <>
+      {Array.from({ length: niveles }, (_, i) => i + 1).map((nivel) => (
+        <Html
+          key={`nivel-${nivel}`}
+          position={[-postX - 0.35, (nivel - 1) * SY, prof]}
+          center
+          distanceFactor={10}
+        >
+          <span className="plano-label plano-label-nivel">N{nivel}</span>
+        </Html>
+      ))}
+    </>
+  )
+}
+
+function RotulosPasillo({ numero }) {
+  return (
+    <>
+      <Html position={[ETIQUETA_X, 2.6, 0]} center distanceFactor={14}>
+        <span className="plano-label">pasillo {numero}</span>
+      </Html>
+      <Html position={[-ETIQUETA_X, 2.6, 0]} center distanceFactor={14}>
+        <span className="plano-label">pasillo {numero}</span>
+      </Html>
+    </>
+  )
+}
+
+function LineaAlcanzable({ hastaZ }) {
+  const ancho = Math.max(ANCHO_RACK * 1.4, 6)
+  return (
+    <group position={[0, Y_ALTURA_ALCANZABLE, hastaZ / 2]}>
+      <mesh>
+        <boxGeometry args={[ancho, 0.015, hastaZ + 4]} />
+        <meshStandardMaterial
+          color="#ffffff"
+          transparent
+          opacity={0.22}
+          depthWrite={false}
+        />
+      </mesh>
+      <Html position={[ancho / 2 + 0.6, 0, 0]} center distanceFactor={16}>
+        <span className="plano-label plano-label-alcance">
+          alcance sin escalera
+        </span>
+      </Html>
+    </group>
+  )
+}
+
+function ZonaExtremo({ tipo, z, color }) {
+  return (
+    <group position={[0, ALTURA_SUELO + 0.01, z]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[ANCHO_RACK + 1, 3.6]} />
+        <meshStandardMaterial color={color} transparent opacity={0.25} />
+      </mesh>
+      <Html position={[0, 0.4, 0]} center distanceFactor={16}>
+        <span className="plano-label">zona de {tipo}</span>
+      </Html>
+    </group>
+  )
+}
+
+function Suelo({ hastaZ, numPasillos }) {
+  return (
+    <group>
+      <mesh
+        position={[0, ALTURA_SUELO, hastaZ / 2]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        <planeGeometry args={[20, hastaZ + 9]} />
+        <meshStandardMaterial color={SUELO} />
+      </mesh>
+      {/* Marcas de suelo: una franja a lo largo de cada calle de paso (el
+          hueco entre dos estanterías), como la pintura de un almacén real. */}
+      {Array.from({ length: numPasillos + 1 }, (_, i) => i).map((i) => (
+        <mesh
+          key={`marca-${i}`}
+          position={[
+            0,
+            ALTURA_SUELO + 0.005,
+            i * PASO_PASILLO - PASO_PASILLO / 2,
+          ]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <planeGeometry args={[ANCHO_RACK - 1, 0.12]} />
+          <meshStandardMaterial color="#e8d9a0" />
+        </mesh>
+      ))}
+    </group>
   )
 }
