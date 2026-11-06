@@ -63,8 +63,8 @@ class RegistroMovimiento
 
     private function retirarDeOrigen(TipoMovimiento $tipo, Lote $lote, float $cantidad, Ubicacion $origen): void
     {
-        if ($tipo === TipoMovimiento::Consumo && $this->estaCaducado($lote)) {
-            throw new ReglaDeDominioException('Un lote caducado no se consume: debe darse de baja.');
+        if (in_array($tipo, [TipoMovimiento::Consumo, TipoMovimiento::Traslado], true) && $this->estaCaducado($lote)) {
+            throw new ReglaDeDominioException('Un lote caducado no se puede consumir ni trasladar: solo darse de baja.');
         }
 
         $stock = Stock::query()
