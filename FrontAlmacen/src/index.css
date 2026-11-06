@@ -533,6 +533,26 @@ button {
   color: #e8edf5;
   border-color: #e8edf5;
 }
+.pos-en-picking {
+  background: var(--azul);
+  color: #fff;
+  border-color: #fff;
+}
+.pos-recogida {
+  background: #3f9142;
+  color: #fff;
+}
+
+.recogida-lista {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #3f9142;
+}
+
+.reservas-orden {
+  color: var(--texto-2);
+  font-size: 0.82rem;
+}
 
 .leyenda {
   display: flex;

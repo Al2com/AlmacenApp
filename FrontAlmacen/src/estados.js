@@ -33,6 +33,18 @@ export const ESTADOS = {
     clase: 'pos-reservada',
     color: '#1b2d5e',
   },
+  en_picking: {
+    etiqueta: 'en picking',
+    simbolo: '▶',
+    clase: 'pos-en-picking',
+    color: '#2447d6',
+  },
+  recogida: {
+    etiqueta: 'recogida',
+    simbolo: '✓',
+    clase: 'pos-recogida',
+    color: '#3f9142',
+  },
 }
 
 export function estado(clave) {
