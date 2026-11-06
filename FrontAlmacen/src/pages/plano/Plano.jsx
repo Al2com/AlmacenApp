@@ -6,11 +6,12 @@ import { DetallePosicion } from '../../components/DetallePosicion'
 import { ESTADOS } from '../../estados'
 import { Estanteria3D } from '../../three/Estanteria3D'
 
+const PASO_PASILLO = 4
+
 export function Plano() {
   const [posiciones, setPosiciones] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(false)
-  const [pasillo, setPasillo] = useState(1)
   const [seleccion, setSeleccion] = useState(null)
 
   useEffect(() => {
@@ -30,14 +31,10 @@ export function Plano() {
     }
   }, [])
 
-  const pasillos = useMemo(
-    () => [...new Set(posiciones.map((p) => p.pasillo))].sort((a, b) => a - b),
-    [posiciones]
-  )
-  const delPasillo = useMemo(
-    () => posiciones.filter((p) => p.pasillo === pasillo),
-    [posiciones, pasillo]
-  )
+  const centroZ = useMemo(() => {
+    const pasillos = new Set(posiciones.map((p) => p.pasillo)).size
+    return ((pasillos - 1) * PASO_PASILLO) / 2
+  }, [posiciones])
 
   if (error) {
     return <p className="error">No se pudo cargar el plano.</p>
@@ -51,37 +48,20 @@ export function Plano() {
     <section>
       <h1>plano del almacén</h1>
       <p className="pda-progreso">
-        Arrastra para girar, rueda para acercar. Pulsa una caja para ver su
-        detalle.
+        Los cuatro pasillos a la vez. Arrastra para girar, rueda para acercar.
+        Pulsa una posición para ver su contenido.
       </p>
 
-      <div className="pasillos" role="tablist" aria-label="Pasillos">
-        {pasillos.map((numero) => (
-          <button
-            key={numero}
-            type="button"
-            className={numero === pasillo ? 'activo' : undefined}
-            aria-pressed={numero === pasillo}
-            onClick={() => {
-              setPasillo(numero)
-              setSeleccion(null)
-            }}
-          >
-            pasillo {numero}
-          </button>
-        ))}
-      </div>
-
       <div className="plano-escena">
-        <Canvas camera={{ position: [0, 3, 12], fov: 50 }}>
-          <ambientLight intensity={0.7} />
-          <directionalLight position={[5, 10, 7]} intensity={1} />
+        <Canvas camera={{ position: [12, 9, centroZ + 16], fov: 50 }}>
+          <ambientLight intensity={0.75} />
+          <directionalLight position={[8, 14, 10]} intensity={1} />
           <Estanteria3D
-            posiciones={delPasillo}
+            posiciones={posiciones}
             seleccion={seleccion}
             onSeleccion={setSeleccion}
           />
-          <OrbitControls target={[0, 1, 0]} enablePan={false} />
+          <OrbitControls target={[0, 1, centroZ]} enablePan={false} />
         </Canvas>
       </div>
 

@@ -985,10 +985,22 @@ th {
 
 /* --- Plano 3D --- */
 .plano-escena {
-  height: 440px;
+  height: 520px;
   border: 1px solid var(--linea);
   border-radius: var(--radio);
   background: var(--hormigon);
   margin-bottom: 0.75rem;
   touch-action: none;
+}
+
+.plano-label {
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--tinta);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
 }
