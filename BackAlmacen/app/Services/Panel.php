@@ -90,6 +90,7 @@ class Panel
                 'lote' => $s->lote->codigo_lote,
                 'caducidad' => $s->lote->caducidad?->toDateString(),
                 'disponible' => (float) $s->cantidad - (float) $s->cantidad_reservada,
+                'reservada' => (float) $s->cantidad_reservada,
                 'total' => (float) $s->cantidad,
             ])->values()->all(),
         ])->all();

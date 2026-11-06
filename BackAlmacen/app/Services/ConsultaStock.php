@@ -14,9 +14,10 @@ use Illuminate\Support\Carbon;
 class ConsultaStock
 {
     /**
+     * @param  array{articulo_id?: ?int, estado?: ?string, ubicacion_id?: ?int, ubicacion?: ?string, lote?: ?string}  $filtros
      * @return list<array<string, mixed>>
      */
-    public function listar(?int $articuloId = null, ?string $estado = null, ?int $ubicacionId = null, ?string $lote = null): array
+    public function listar(array $filtros = []): array
     {
         $hoy = FechaSimulada::hoy();
         $limite = $hoy->copy()->addDays((int) config('almacen.dias_aviso_caducidad', 7));
@@ -24,22 +25,27 @@ class ConsultaStock
         $query = Stock::query()
             ->select('stock.*')
             ->join('lotes', 'lotes.id', '=', 'stock.lote_id')
+            ->join('ubicaciones', 'ubicaciones.id', '=', 'stock.ubicacion_id')
             ->with(['lote.articulo', 'ubicacion'])
             ->where('stock.cantidad', '>', 0)
             ->orderBy('lotes.articulo_id')
             ->orderByRaw('lotes.caducidad is null')
             ->orderBy('lotes.caducidad');
 
-        if ($articuloId !== null) {
-            $query->where('lotes.articulo_id', $articuloId);
+        if (! empty($filtros['articulo_id'])) {
+            $query->where('lotes.articulo_id', $filtros['articulo_id']);
         }
 
-        if ($ubicacionId !== null) {
-            $query->where('stock.ubicacion_id', $ubicacionId);
+        if (! empty($filtros['ubicacion_id'])) {
+            $query->where('stock.ubicacion_id', $filtros['ubicacion_id']);
         }
 
-        if ($lote !== null && $lote !== '') {
-            $query->where('lotes.codigo_lote', 'like', '%'.$lote.'%');
+        if (! empty($filtros['ubicacion'])) {
+            $query->where('ubicaciones.codigo', 'like', '%'.$filtros['ubicacion'].'%');
+        }
+
+        if (! empty($filtros['lote'])) {
+            $query->where('lotes.codigo_lote', 'like', '%'.$filtros['lote'].'%');
         }
 
         $filas = $query->get()->map(fn (Stock $s) => [
@@ -48,13 +54,15 @@ class ConsultaStock
             'lote' => $s->lote->codigo_lote,
             'caducidad' => $s->lote->caducidad?->toDateString(),
             'ubicacion' => $s->ubicacion->codigo,
+            'ubicacion_id' => $s->ubicacion_id,
             'disponible' => (float) $s->cantidad - (float) $s->cantidad_reservada,
             'reservada' => (float) $s->cantidad_reservada,
             'total' => (float) $s->cantidad,
             'estado' => $this->estado($s->lote->caducidad, $hoy, $limite),
         ]);
 
-        if ($estado !== null) {
+        $estado = $filtros['estado'] ?? null;
+        if ($estado !== null && $estado !== '') {
             $filas = $filas->filter(fn (array $fila) => $fila['estado'] === $estado)->values();
         }
 

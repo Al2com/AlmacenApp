@@ -68,6 +68,17 @@ class ConsultaStockTest extends TestCase
         $this->assertSame($aqui->codigo, $filas[0]['ubicacion']);
     }
 
+    public function test_el_catalogo_de_ubicaciones_esta_disponible(): void
+    {
+        Ubicacion::factory()->create(['activa' => true]);
+        Ubicacion::factory()->create(['activa' => false]);
+
+        $this->actingAs(User::factory()->create(['rol' => Rol::OperadorProduccion]))
+            ->getJson('/api/ubicaciones')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
     public function test_detalle_de_una_posicion(): void
     {
         $articulo = Articulo::factory()->create();

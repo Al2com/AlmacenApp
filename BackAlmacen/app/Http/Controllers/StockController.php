@@ -21,12 +21,13 @@ class StockController extends Controller
     {
         Gate::authorize('ver-stock');
 
-        return response()->json($this->consulta->listar(
-            $request->integer('articulo_id') ?: null,
-            $request->string('estado')->toString() ?: null,
-            $request->integer('ubicacion_id') ?: null,
-            $request->string('lote')->toString() ?: null,
-        ));
+        return response()->json($this->consulta->listar([
+            'articulo_id' => $request->integer('articulo_id') ?: null,
+            'estado' => $request->string('estado')->toString() ?: null,
+            'ubicacion_id' => $request->integer('ubicacion_id') ?: null,
+            'ubicacion' => $request->string('ubicacion')->toString() ?: null,
+            'lote' => $request->string('lote')->toString() ?: null,
+        ]));
     }
 
     public function posicion(Ubicacion $ubicacion): JsonResponse

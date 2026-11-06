@@ -9,6 +9,7 @@ use App\Http\Controllers\PlanoController;
 use App\Http\Controllers\RecepcionController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\TareaController;
+use App\Http\Controllers\UbicacionController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
@@ -52,8 +53,9 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
         Route::post('/tareas/{tarea}/confirmar', [TareaController::class, 'confirmar']);
         Route::post('/tareas/{tarea}/incidencia', [TareaController::class, 'incidencia']);
 
-        // Catálogo de artículos (consulta, cualquier rol).
+        // Catálogos de consulta (cualquier rol).
         Route::get('/articulos', [ArticuloController::class, 'index']);
+        Route::get('/ubicaciones', [UbicacionController::class, 'index']);
 
         // Plano del almacén para la vista 3D (admin, gestor, producción).
         Route::get('/plano/estanteria', [PlanoController::class, 'estanteria']);
