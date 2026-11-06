@@ -1147,6 +1147,36 @@ th {
 }
 
 /* --- Plano 3D --- */
+.demo-panel {
+  margin-bottom: 0.75rem;
+}
+
+.demo-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.demo-controles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.demo-controles .boton {
+  min-height: 40px;
+  font-size: 0.85rem;
+}
+
+.demo-estado {
+  margin: 0.75rem 0 0;
+  color: var(--texto-2);
+  font-size: 0.9rem;
+}
+
 .plano-escena {
   height: 520px;
   border: 1px solid var(--linea);

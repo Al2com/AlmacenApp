@@ -1,6 +1,6 @@
 import { OrbitControls, Stats } from '@react-three/drei'
 import { Canvas, useThree } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { actividad } from '../../api/panel'
 import { estanteria as cargarEstanteria } from '../../api/plano'
 import { useSesion } from '../../auth/contexto'
@@ -8,6 +8,16 @@ import { DetallePosicion } from '../../components/DetallePosicion'
 import { PASO_PASILLO } from '../../config/almacen'
 import { ESTADOS } from '../../estados'
 import { Estanteria3D } from '../../three/Estanteria3D'
+import { OperarioAnimado } from '../../three/OperarioAnimado'
+import { ModoDemostracion } from './ModoDemostracion'
+import { useOperarioVirtual } from './useOperarioVirtual'
+
+function prefiereSinMovimiento() {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  )
+}
 
 export function Plano() {
   const { usuario } = useSesion()
@@ -20,10 +30,21 @@ export function Plano() {
   const [foco, setFoco] = useState(null)
   const [resaltada, setResaltada] = useState(null)
 
+  // Refresco silencioso (lo usa también el modo demostración tras confirmar
+  // una tarea, para ver la caja cambiar al momento sin esperar al sondeo).
+  const cargar = useCallback(async () => {
+    try {
+      const datos = await cargarEstanteria()
+      setPosiciones(datos)
+    } catch {
+      // Un fallo puntual aquí no es grave: se reintenta en el siguiente sondeo.
+    }
+  }, [])
+
   useEffect(() => {
     let activo = true
 
-    async function cargar(inicial) {
+    async function actualizar(inicial) {
       try {
         const datos = await cargarEstanteria()
         if (activo) {
@@ -37,10 +58,10 @@ export function Plano() {
       }
     }
 
-    cargar(true)
+    actualizar(true)
     // Se refresca cada 5 s para reflejar en vivo lo que se reserva (pedidos) y
     // lo que se consume (picking en la PDA).
-    const id = setInterval(() => cargar(false), 5000)
+    const id = setInterval(() => actualizar(false), 5000)
     return () => {
       activo = false
       clearInterval(id)
@@ -95,6 +116,16 @@ export function Plano() {
       ].sort((a, b) => a - b),
     [posiciones]
   )
+  const zCamara = pasillos.length * PASO_PASILLO + 1.5
+  const reducida = useMemo(() => prefiereSinMovimiento(), [])
+
+  const demo = useOperarioVirtual({
+    posiciones,
+    pasillos,
+    zCamara,
+    reducida,
+    onConfirmado: cargar,
+  })
 
   if (error) {
     return <p className="error">No se pudo cargar el plano.</p>
@@ -110,6 +141,8 @@ export function Plano() {
         Arrastra para girar, rueda para acercar. Pulsa una posición para ver su
         contenido. Centra un pasillo para ver el número de cada bahía.
       </p>
+
+      {esAdmin && <ModoDemostracion demo={demo} />}
 
       <div className="pasillos" role="group" aria-label="Centrar en un pasillo">
         <button
@@ -144,6 +177,14 @@ export function Plano() {
             foco={foco}
             onSeleccion={setSeleccion}
           />
+          {esAdmin && (
+            <OperarioAnimado
+              fase={demo.fase}
+              destino={demo.destino}
+              carro={demo.carro}
+              visible={demo.activa && !reducida}
+            />
+          )}
           <ControlCamara foco={foco} pasillos={pasillos} />
         </Canvas>
       </div>
