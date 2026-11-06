@@ -533,8 +533,10 @@ button {
 .fefo {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 6px 0 0;
   border-top: 2px solid var(--tinta);
+  max-height: 360px;
+  overflow-y: auto;
 }
 
 .fefo li {
@@ -656,8 +658,17 @@ button {
 .movs {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 6px 0 0;
   border-top: 2px solid var(--tinta);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Barra de scroll fina y discreta en las listas del panel. */
+.fefo,
+.movs {
+  scrollbar-width: thin;
+  scrollbar-color: var(--linea) transparent;
 }
 
 .movs li {
