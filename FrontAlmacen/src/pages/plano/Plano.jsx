@@ -3,10 +3,9 @@ import { Canvas } from '@react-three/fiber'
 import { useEffect, useMemo, useState } from 'react'
 import { estanteria as cargarEstanteria } from '../../api/plano'
 import { DetallePosicion } from '../../components/DetallePosicion'
+import { PASO_PASILLO } from '../../config/almacen'
 import { ESTADOS } from '../../estados'
 import { Estanteria3D } from '../../three/Estanteria3D'
-
-const PASO_PASILLO = 4
 
 export function Plano() {
   const [posiciones, setPosiciones] = useState([])

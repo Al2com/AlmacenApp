@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react'
+import { BAHIAS, NIVELES } from '../config/almacen'
 import { estado, ESTADOS } from '../estados'
-
-const NIVELES = [3, 2, 1]
-const BAHIAS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 export function Estanteria({ posiciones }) {
   const pasillos = useMemo(

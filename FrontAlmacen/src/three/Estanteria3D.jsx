@@ -1,17 +1,23 @@
 import { Html } from '@react-three/drei'
+import {
+  ALMACEN,
+  ANCHO_RACK,
+  CENTRO_BAHIA,
+  PASO_PASILLO,
+  POSTE_X,
+  PROF_RACK,
+} from '../config/almacen'
 import { estado } from '../estados'
 
-const SEP = 1.15 // separación entre bahías / niveles
-const PASO_PASILLO = 4 // separación entre pasillos (deja el hueco para andar)
+const SX = ALMACEN.anchoBahia // separación entre bahías (eje X)
+const SY = ALMACEN.alturaNivel // altura de cada nivel (eje Y)
+const ETIQUETA_X = -(ANCHO_RACK / 2 + 1) // posición de la etiqueta del pasillo
 
 // Colores del rack (docs/frontend.md): montantes azules, largueros naranjas.
 const MONTANTE = '#2447d6'
 const LARGUERO = '#e8590c'
 const SUELO = '#cfd4da'
 const CRISTAL = '#bfe3ef'
-
-const ANCHO_RACK = 11.7
-const PROF_RACK = 0.58
 
 // Recrea el almacén: un rack por pasillo en paralelo, con el hueco del pasillo
 // entre medias, y una cámara refrigerada (sala de cristal con su propia
@@ -31,7 +37,7 @@ export function Estanteria3D({ posiciones, seleccion, onSeleccion }) {
       {pasillos.map((numero, indice) => (
         <group key={numero} position={[0, 0, indice * PASO_PASILLO]}>
           <Rack />
-          <Html position={[-6.8, 2.6, 0]} center distanceFactor={14}>
+          <Html position={[ETIQUETA_X, 2.6, 0]} center distanceFactor={14}>
             <span className="plano-label">pasillo {numero}</span>
           </Html>
           {normales
@@ -40,8 +46,8 @@ export function Estanteria3D({ posiciones, seleccion, onSeleccion }) {
               <Caja
                 key={p.codigo}
                 posicion={p}
-                x={(p.estanteria - 5.5) * SEP}
-                y={(p.nivel - 1) * SEP}
+                x={(p.estanteria - CENTRO_BAHIA) * SX}
+                y={(p.nivel - 1) * SY}
                 seleccionada={seleccion?.codigo === p.codigo}
                 onSeleccion={onSeleccion}
               />
@@ -63,9 +69,9 @@ export function Estanteria3D({ posiciones, seleccion, onSeleccion }) {
 }
 
 function Rack({
-  postX = 5.85,
+  postX = POSTE_X,
   ancho = ANCHO_RACK,
-  niveles = 3,
+  niveles = ALMACEN.niveles,
   prof = PROF_RACK,
 }) {
   const postes = [
@@ -74,9 +80,9 @@ function Rack({
     [-postX, -prof],
     [postX, -prof],
   ]
-  const alturas = Array.from({ length: niveles + 1 }, (_, i) => -0.55 + i * SEP)
-  const alto = niveles * SEP + 1
-  const postY = -0.55 + (niveles * SEP) / 2
+  const alturas = Array.from({ length: niveles + 1 }, (_, i) => -0.55 + i * SY)
+  const alto = niveles * SY + 1
+  const postY = -0.55 + (niveles * SY) / 2
 
   return (
     <group>
@@ -106,12 +112,12 @@ function CamaraRefrigerada({ posiciones, seleccion, onSeleccion }) {
   const celdas = maxE - minE + 1
   const maxN = Math.max(...posiciones.map((p) => p.nivel))
 
-  const ancho = celdas * SEP
+  const ancho = celdas * SX
   const prof = 0.5
   const salaW = ancho + 1.4
-  const salaH = maxN * SEP + 1.6
+  const salaH = maxN * SY + 1.6
   const salaD = 2 * prof + 1.4
-  const salaY = -0.55 + (maxN * SEP) / 2 + 0.1
+  const salaY = -0.55 + (maxN * SY) / 2 + 0.1
 
   return (
     <group>
@@ -144,8 +150,8 @@ function CamaraRefrigerada({ posiciones, seleccion, onSeleccion }) {
         <Caja
           key={p.codigo}
           posicion={p}
-          x={(p.estanteria - centroE) * SEP}
-          y={(p.nivel - 1) * SEP}
+          x={(p.estanteria - centroE) * SX}
+          y={(p.nivel - 1) * SY}
           seleccionada={seleccion?.codigo === p.codigo}
           onSeleccion={onSeleccion}
         />
