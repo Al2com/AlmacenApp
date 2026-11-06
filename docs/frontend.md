@@ -109,8 +109,10 @@ Fase final. Recreación con Three.js del almacén, con los **mismos datos, estad
 
 Un botón «iniciar demostración» pone en marcha a un **operario virtual** que pica, una a una, la cola real de tareas pendientes (la orden más antigua primero, en su orden de ruta). Cada confirmación es una llamada real a la API (la misma que usa la PDA): genera un movimiento de verdad, aparece en el feed del admin y actualiza las cajas del plano. **La animación nunca toca el stock por su cuenta**; solo dispara la confirmación real en el momento justo.
 
-- El operario camina hasta la posición, y si el nivel queda por encima de la **altura alcanzable sin escalera** (medida del archivo de configuración), saca una escalera, sube, coge la caja y baja. Luego vuelve y la deja en un carro de picking.
-- **La caja cambia de estado en el momento exacto de la confirmación**, nunca antes de que el operario «llegue».
-- Controles: **pausar/reanudar**, **acelerar** (la velocidad del paseo, no cambia qué se confirma) y **reiniciar** (vuelve a caminar hacia la tarea actual desde el principio; no deshace ninguna confirmación ya hecha, eso es imposible, los movimientos son inmutables).
+- El operario **empuja un transpalé con un palé** y se mueve **por los pasillos, nunca a través de las estanterías**: para cambiar de pasillo sale a un carril lateral, lo recorre y entra por el pasillo de destino (ruta en L); dentro del mismo pasillo se desliza por delante de las bahías. La geometría del recorrido vive en `src/pages/plano/rutaOperario.js`, a partir de las medidas compartidas.
+- Si el nivel queda por encima de la **altura alcanzable sin escalera** (medida del archivo de configuración), saca una escalera, sube, coge la caja y baja.
+- **Carga la caja en el transpalé y la lleva consigo**: no vuelve a producción tras cada caja, sino que las va apilando y hace **un único viaje a producción al final**, a dejar el palé.
+- **La caja cambia de estado en el momento exacto de la confirmación** (al cargarla en el transpalé), nunca antes de que el operario «llegue».
+- Controles: **pausar/reanudar**, **acelerar** (la velocidad del paseo, no cambia qué se confirma) y **reiniciar** (empieza el recorrido otra vez desde la entrada; no deshace ninguna confirmación ya hecha, eso es imposible, los movimientos son inmutables).
 - Si el sistema detecta `prefers-reduced-motion`, no hay paseo: el operario no se mueve y solo se ven los cambios de estado de las cajas, con una pausa breve entre cada uno para que se noten.
 - El operario virtual usa un usuario de demostración propio (rol operador de almacén), creado solo en local la primera vez que hace falta: `docs/diseno.md` y `docs/seguridad.md`.
