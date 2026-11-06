@@ -52,6 +52,7 @@ class ConsultaStock
             'articulo' => $s->lote->articulo->nombre,
             'codigo_articulo' => $s->lote->articulo->codigo,
             'lote' => $s->lote->codigo_lote,
+            'lote_id' => $s->lote_id,
             'caducidad' => $s->lote->caducidad?->toDateString(),
             'ubicacion' => $s->ubicacion->codigo,
             'ubicacion_id' => $s->ubicacion_id,
@@ -85,6 +86,7 @@ class ConsultaStock
         ]);
 
         return [
+            'ubicacion_id' => $ubicacion->id,
             'codigo' => $ubicacion->codigo,
             'pasillo' => $ubicacion->pasillo,
             'estanteria' => $ubicacion->estanteria,
@@ -96,6 +98,7 @@ class ConsultaStock
                 'articulo' => $s->lote->articulo->nombre,
                 'codigo_articulo' => $s->lote->articulo->codigo,
                 'lote' => $s->lote->codigo_lote,
+                'lote_id' => $s->lote_id,
                 'caducidad' => $s->lote->caducidad?->toDateString(),
                 'disponible' => (float) $s->cantidad - (float) $s->cantidad_reservada,
                 'reservada' => (float) $s->cantidad_reservada,

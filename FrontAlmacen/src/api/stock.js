@@ -1,9 +1,14 @@
 import { api } from './cliente'
 
-export const listar = ({ articuloId, estado } = {}) => {
+export const listar = (filtros = {}) => {
   const params = new URLSearchParams()
-  if (articuloId) params.set('articulo_id', articuloId)
-  if (estado) params.set('estado', estado)
+  if (filtros.articuloId) params.set('articulo_id', filtros.articuloId)
+  if (filtros.estado) params.set('estado', filtros.estado)
+  if (filtros.lote) params.set('lote', filtros.lote)
+  if (filtros.ubicacion) params.set('ubicacion', filtros.ubicacion)
   const cadena = params.toString()
   return api.get(`/stock${cadena ? `?${cadena}` : ''}`)
 }
+
+export const posicion = (ubicacionId) =>
+  api.get(`/stock/posicion/${ubicacionId}`)
