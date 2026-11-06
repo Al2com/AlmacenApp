@@ -18,7 +18,8 @@ React + Vite, con Three.js para la vista 3D. Contexto general en `../CLAUDE.md`;
 - Los colores, la tipografía y los estados de una posición salen de las variables CSS definidas según `docs/frontend.md`. No se escriben colores sueltos en los componentes.
 - Todo lo que sea de color lleva también un símbolo o texto: nadie debe depender solo del tono para entender un estado.
 - Zonas táctiles de al menos 44 px, foco visible y etiquetas de accesibilidad en los botones que solo llevan icono.
-- Los estados de caducidad (libre, ocupada, caduca pronto, caducada, reservada) se calculan en un solo sitio y se usan igual en la estantería 2D y en la vista 3D.
+- Los estados de una posición (libre, ocupada, caduca pronto, caducada, reservada, en picking, recogida) se calculan en un solo sitio (backend) y se pintan igual en la estantería 2D y en la vista 3D (`src/estados.js`).
+- Las medidas del almacén (ancho de pasillo, bahías, niveles, altura alcanzable sin escalera...) viven en `src/config/almacen.js`, compartidas por la 2D y la 3D. No se repiten números sueltos en los componentes.
 
 ## Comandos
 
