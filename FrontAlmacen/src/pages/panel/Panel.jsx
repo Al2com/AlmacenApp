@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as panelApi from '../../api/panel'
 import { Estanteria } from '../../components/Estanteria'
 import { GraficoHoras } from '../../components/GraficoHoras'
@@ -121,8 +121,68 @@ export function Panel() {
       </div>
 
       <BloqueDelRol rol={usuario.rol} fefo={datos.fefo} flujo={datos.flujo} />
+
+      {usuario.rol === ROLES.admin && <FeedActividad />}
     </section>
   )
+}
+
+function FeedActividad() {
+  const [eventos, setEventos] = useState([])
+  const desdeRef = useRef(null)
+
+  useEffect(() => {
+    let activo = true
+
+    async function sondear() {
+      try {
+        const nuevos = await panelApi.actividad(desdeRef.current)
+        if (!activo || nuevos.length === 0) return
+        desdeRef.current = nuevos[0].fecha
+        setEventos((previos) => [...nuevos, ...previos].slice(0, 50))
+      } catch {
+        // Un fallo puntual de red no rompe el feed; se reintenta al siguiente sondeo.
+      }
+    }
+
+    sondear()
+    const id = setInterval(sondear, 5000)
+    return () => {
+      activo = false
+      clearInterval(id)
+    }
+  }, [])
+
+  return (
+    <section aria-label="Actividad en vivo">
+      <h2>actividad en vivo</h2>
+      <p className="subtitulo">Cada operación aparece aquí en cuanto ocurre.</p>
+      {eventos.length === 0 ? (
+        <p className="vacio">Sin actividad reciente.</p>
+      ) : (
+        <ul className="movs feed">
+          {eventos.map((evento) => (
+            <li key={evento.id}>
+              <span className="hora">{hora(evento.fecha)}</span>
+              <span className={`tipo mov-${evento.tipo}`}>{evento.tipo}</span>
+              <span className="desc">{descripcion(evento)}</span>
+              {evento.cantidad != null && (
+                <span className="cant">{evento.cantidad}</span>
+              )}
+              <span className="user">{evento.usuario}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+function descripcion(evento) {
+  if (evento.lote) {
+    return `${evento.lote}${evento.ubicacion ? ` en ${evento.ubicacion}` : ''}`
+  }
+  return evento.detalle ?? '—'
 }
 
 function SalenPrimero({ lotes }) {
