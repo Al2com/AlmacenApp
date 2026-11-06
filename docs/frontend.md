@@ -66,12 +66,20 @@ De arriba abajo:
 
 1. Barra superior con el logotipo, el menú del rol y el usuario. El selector Admin/Gestor del prototipo es solo para la maqueta; en la aplicación real el rol viene del login.
 2. Cuatro cifras del día: lotes que caducan en 7 días o menos, órdenes en curso, tareas de picking pendientes e incidencias abiertas.
-3. Estantería en alzado: selector de pasillo con su ocupación, rejilla de 10 bahías por 3 niveles, leyenda, y debajo el detalle de la posición pulsada (artículo, lote, caducidad, disponible de total). Es el sustituto 2D de la vista 3D.
+3. Estantería en alzado: selector de pasillo con su ocupación, rejilla de 10 bahías por 3 niveles, leyenda, y debajo el detalle de la posición pulsada (artículo, lote, caducidad, disponible de total). Es el sustituto 2D de la vista 3D. Tiene un **control de densidad** (compacta/ampliada): en ampliada cada celda muestra el código de artículo y el disponible sin tener que pulsar, con scroll horizontal si no cabe en la pantalla. Las posiciones con **stock reservado** llevan una marca `R` con la cantidad.
 4. «Salen primero»: los lotes que toca consumir antes, en orden FEFO. Un lote caducado aparece el primero pero marcado para baja, no para consumo.
 5. Gráfico de entradas y salidas por hora y últimos movimientos.
 6. Bloque propio del rol: el gestor ve conteos y bajas pendientes de aprobar; el admin ve la actividad del día por rol.
 
 De dónde sale cada dato (para construir los endpoints): las cifras y el orden FEFO se calculan sobre `stock` y `lotes`; la estantería sale de `ubicaciones` (pasillo, estantería, nivel) cruzada con `stock`; los movimientos y el gráfico, de `movimientos` agrupados por hora y tipo.
+
+## Stock y lotes (`/stock`)
+
+Lectura para todos los roles; las acciones de inventario, solo para admin y gestor.
+
+- **Filtros**: artículo, estado de caducidad, lote y ubicación. La tabla muestra artículo, lote, ubicación, disponible de total (con la marca `R` de reservado) y estado.
+- **Detalle de una posición**: al pulsar «ver posición» se muestran los lotes que contiene, con disponible, reservado y total.
+- **Acciones del gestor** desde el detalle: **regularizar** (cantidad contada + motivo), **trasladar** (ubicación de destino + cantidad) y **dar de baja** (cantidad + motivo). Todas piden confirmación en dos pasos: primero se revisa el cambio (cantidad actual → nueva, destino, motivo) y luego se confirma. Va contra la API real.
 
 ## Pantalla de PDA (`/pda`)
 
