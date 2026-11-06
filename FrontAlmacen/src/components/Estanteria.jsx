@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { estado, ESTADOS } from '../estados'
+import { DetallePosicion } from './DetallePosicion'
 
 const NIVELES = [3, 2, 1]
 const BAHIAS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -81,39 +82,5 @@ export function Estanteria({ posiciones }) {
 
       {seleccion && <DetallePosicion posicion={seleccion} />}
     </section>
-  )
-}
-
-function DetallePosicion({ posicion }) {
-  return (
-    <div className="tarjeta" style={{ marginTop: '1rem' }}>
-      <h3>{posicion.codigo}</h3>
-      {posicion.contenido.length === 0 ? (
-        <p className="vacio">Posición libre.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>artículo</th>
-              <th>lote</th>
-              <th>caducidad</th>
-              <th>disponible / total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {posicion.contenido.map((linea) => (
-              <tr key={linea.lote}>
-                <td>{linea.articulo}</td>
-                <td>{linea.lote}</td>
-                <td>{linea.caducidad ?? '—'}</td>
-                <td>
-                  {linea.disponible} / {linea.total}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
   )
 }

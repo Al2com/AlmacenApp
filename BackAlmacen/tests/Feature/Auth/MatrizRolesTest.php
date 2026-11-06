@@ -101,4 +101,13 @@ class MatrizRolesTest extends TestCase
 
         $this->actingAs($user)->getJson('/api/tareas')->assertStatus($veTareas ? 200 : 403);
     }
+
+    #[DataProvider('roles')]
+    public function test_el_plano_lo_ven_admin_gestor_y_produccion(Rol $rol, bool $gestionaUsuarios, bool $vePanel): void
+    {
+        $vePlano = in_array($rol, [Rol::Admin, Rol::GestorInventario, Rol::OperadorProduccion], true);
+        $user = User::factory()->create(['rol' => $rol]);
+
+        $this->actingAs($user)->getJson('/api/plano/estanteria')->assertStatus($vePlano ? 200 : 403);
+    }
 }

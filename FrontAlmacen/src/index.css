@@ -534,3 +534,13 @@ th {
   width: 100%;
   margin-top: 0.5rem;
 }
+
+/* --- Plano 3D --- */
+.plano-escena {
+  height: 440px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  background: var(--hormigon);
+  margin-bottom: 0.75rem;
+  touch-action: none;
+}

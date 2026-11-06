@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Privada } from './auth/Privada'
 import { Placeholder } from './components/Placeholder'
@@ -6,6 +7,11 @@ import { Login } from './pages/login/Login'
 import { Ordenes } from './pages/ordenes/Ordenes'
 import { Panel } from './pages/panel/Panel'
 import { Pda } from './pages/pda/Pda'
+
+// La vista 3D arrastra Three.js: se carga solo al abrir el plano.
+const Plano = lazy(() =>
+  import('./pages/plano/Plano').then((modulo) => ({ default: modulo.Plano }))
+)
 
 const TODOS = [
   'admin',
@@ -35,7 +41,9 @@ export function App() {
           <Privada
             roles={['admin', 'gestor_inventario', 'operador_produccion']}
           >
-            <Placeholder titulo="Plano 3D" />
+            <Suspense fallback={<p className="cargando">Cargando plano…</p>}>
+              <Plano />
+            </Suspense>
           </Privada>
         }
       />

@@ -4,6 +4,7 @@ use App\Http\Controllers\ArticuloController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OrdenController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\PlanoController;
 use App\Http\Controllers\RecepcionController;
 use App\Http\Controllers\TareaController;
 use App\Http\Controllers\UsuarioController;
@@ -51,5 +52,8 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
 
         // Catálogo de artículos (consulta, cualquier rol).
         Route::get('/articulos', [ArticuloController::class, 'index']);
+
+        // Plano del almacén para la vista 3D (admin, gestor, producción).
+        Route::get('/plano/estanteria', [PlanoController::class, 'estanteria']);
     });
 });
