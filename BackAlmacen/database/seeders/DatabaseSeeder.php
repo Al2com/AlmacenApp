@@ -16,8 +16,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $usuarios = $this->crearUsuarios();
-        $ubicaciones = $this->crearUbicaciones();
-        $this->poblarAlmacen($usuarios, $ubicaciones);
+        ['normales' => $normales, 'frias' => $frias] = $this->crearUbicaciones();
+        $this->poblarAlmacen($usuarios, $normales, $frias);
     }
 
     /**
@@ -41,18 +41,19 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * La estantería del prototipo: 4 pasillos de 10 estanterías por 3 niveles.
+     * La estantería del prototipo: 4 pasillos de 10 estanterías por 3 niveles,
+     * más una cámara refrigerada con una estantería pequeña (3 por 2) para los
+     * productos que necesitan frío.
      *
-     * @return list<Ubicacion>
+     * @return array{normales: list<Ubicacion>, frias: list<Ubicacion>}
      */
     private function crearUbicaciones(): array
     {
-        $ubicaciones = [];
-
+        $normales = [];
         foreach (range(1, 4) as $pasillo) {
             foreach (range(1, 10) as $estanteria) {
                 foreach (range(1, 3) as $nivel) {
-                    $ubicaciones[] = Ubicacion::create([
+                    $normales[] = Ubicacion::create([
                         'codigo' => sprintf('P%d-E%02d-N%d', $pasillo, $estanteria, $nivel),
                         'tipo' => 'estante',
                         'pasillo' => $pasillo,
@@ -66,7 +67,23 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        return $ubicaciones;
+        $frias = [];
+        foreach (range(1, 3) as $estanteria) {
+            foreach (range(1, 2) as $nivel) {
+                $frias[] = Ubicacion::create([
+                    'codigo' => sprintf('FRIO-E%02d-N%d', $estanteria, $nivel),
+                    'tipo' => 'refrigerado',
+                    'pasillo' => 5,
+                    'estanteria' => $estanteria,
+                    'nivel' => $nivel,
+                    'capacidad' => 100,
+                    'max_lotes' => 1,
+                    'activa' => true,
+                ]);
+            }
+        }
+
+        return ['normales' => $normales, 'frias' => $frias];
     }
 
     /**
@@ -76,9 +93,10 @@ class DatabaseSeeder extends Seeder
      * (2026-11-05) para que los estados se vean en el panel.
      *
      * @param  array<string, User>  $usuarios
-     * @param  list<Ubicacion>  $ubicaciones
+     * @param  list<Ubicacion>  $normales
+     * @param  list<Ubicacion>  $frias
      */
-    private function poblarAlmacen(array $usuarios, array $ubicaciones): void
+    private function poblarAlmacen(array $usuarios, array $normales, array $frias): void
     {
         $servicio = new RegistroMovimiento;
         $recepcion = $usuarios[Rol::OperadorRecepcion->value];
@@ -86,20 +104,28 @@ class DatabaseSeeder extends Seeder
         $gestor = $usuarios[Rol::GestorInventario->value];
 
         $siguienteLibre = 0;
-        $recibir = function (Lote $lote, float $cantidad) use ($servicio, $recepcion, $ubicaciones, &$siguienteLibre): Ubicacion {
-            $ubicacion = $ubicaciones[$siguienteLibre++];
+        $recibir = function (Lote $lote, float $cantidad) use ($servicio, $recepcion, $normales, &$siguienteLibre): Ubicacion {
+            $ubicacion = $normales[$siguienteLibre++];
             $servicio->registrar(TipoMovimiento::Recepcion, $lote, $cantidad, $recepcion, destino: $ubicacion);
 
             return $ubicacion;
         };
 
-        // Suministros veterinarios. Vacuna: un lote caducado (a la espera de baja),
-        // uno que caduca pronto y uno válido; sirve para ver el FEFO dentro de un artículo.
+        $siguienteFrio = 0;
+        $recibirFrio = function (Lote $lote, float $cantidad) use ($servicio, $recepcion, $frias, &$siguienteFrio): Ubicacion {
+            $ubicacion = $frias[$siguienteFrio++];
+            $servicio->registrar(TipoMovimiento::Recepcion, $lote, $cantidad, $recepcion, destino: $ubicacion);
+
+            return $ubicacion;
+        };
+
+        // Vacuna (inyectable, cadena de frío) → cámara refrigerada. Un lote caducado
+        // (a la espera de baja), uno que caduca pronto y uno válido: FEFO dentro de un artículo.
         $vacuna = Articulo::factory()->create(['codigo' => 'VAC-001', 'nombre' => 'Vacuna polivalente ovino', 'unidad' => 'dosis']);
-        $recibir($this->lote($vacuna, 'VAC-2609', '2026-09-20', '2026-10-25'), 50);
-        $recibir($this->lote($vacuna, 'VAC-2610', '2026-10-28', '2026-11-09'), 80);
+        $recibirFrio($this->lote($vacuna, 'VAC-2609', '2026-09-20', '2026-10-25'), 50);
+        $recibirFrio($this->lote($vacuna, 'VAC-2610', '2026-10-28', '2026-11-09'), 80);
         $vacunaValida = $this->lote($vacuna, 'VAC-2611', '2026-11-02', '2027-02-01');
-        $ubVacunaValida = $recibir($vacunaValida, 100);
+        $ubVacunaValida = $recibirFrio($vacunaValida, 100);
 
         // Amoxicilina inyectable: dos lotes válidos.
         $amoxicilina = Articulo::factory()->create(['codigo' => 'AMX-001', 'nombre' => 'Amoxicilina 150 mg/ml inyectable', 'unidad' => 'vial']);
@@ -128,7 +154,7 @@ class DatabaseSeeder extends Seeder
         // Salidas: dos consumos, un traslado interno y una baja por caducidad.
         $servicio->registrar(TipoMovimiento::Consumo, $vacunaValida, 30, $almacen, origen: $ubVacunaValida);
         $servicio->registrar(TipoMovimiento::Consumo, $amoxicilinaPrimero, 20, $almacen, origen: $ubAmoxicilinaPrimero);
-        $servicio->registrar(TipoMovimiento::Traslado, $meloxicamLote, 70, $almacen, origen: $ubMeloxicam, destino: $ubicaciones[$siguienteLibre++]);
+        $servicio->registrar(TipoMovimiento::Traslado, $meloxicamLote, 70, $almacen, origen: $ubMeloxicam, destino: $normales[$siguienteLibre++]);
         $servicio->registrar(TipoMovimiento::Baja, $ivermectinaVencida, 25, $gestor, origen: $ubIvermectinaVencida, motivo: 'caducado');
     }
 

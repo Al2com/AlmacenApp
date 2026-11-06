@@ -32,8 +32,11 @@ export function Plano() {
   }, [])
 
   const centroZ = useMemo(() => {
-    const pasillos = new Set(posiciones.map((p) => p.pasillo)).size
-    return ((pasillos - 1) * PASO_PASILLO) / 2
+    const normales = new Set(
+      posiciones.filter((p) => !p.refrigerado).map((p) => p.pasillo)
+    ).size
+    // Centro aproximado del conjunto: pasillos + la cámara al fondo.
+    return (normales * PASO_PASILLO + 1.5) / 2
   }, [posiciones])
 
   if (error) {
@@ -53,7 +56,7 @@ export function Plano() {
       </p>
 
       <div className="plano-escena">
-        <Canvas camera={{ position: [12, 9, centroZ + 16], fov: 50 }}>
+        <Canvas camera={{ position: [13, 10, centroZ + 18], fov: 50 }}>
           <ambientLight intensity={0.75} />
           <directionalLight position={[8, 14, 10]} intensity={1} />
           <Estanteria3D

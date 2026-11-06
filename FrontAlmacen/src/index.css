@@ -1004,3 +1004,8 @@ th {
   white-space: nowrap;
   pointer-events: none;
 }
+
+.plano-label.frio {
+  background: #d6eef7;
+  color: #1a6b86;
+}

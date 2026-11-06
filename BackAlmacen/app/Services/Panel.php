@@ -82,6 +82,7 @@ class Panel
             'pasillo' => $ubicacion->pasillo,
             'estanteria' => $ubicacion->estanteria,
             'nivel' => $ubicacion->nivel,
+            'refrigerado' => $ubicacion->tipo === 'refrigerado',
             'estado' => $this->estado($ubicacion->stock, $hoy),
             'contenido' => $ubicacion->stock->map(fn (Stock $s) => [
                 'articulo' => $s->lote->articulo->nombre,
