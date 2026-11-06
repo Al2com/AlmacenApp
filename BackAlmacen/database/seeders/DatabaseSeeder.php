@@ -103,9 +103,25 @@ class DatabaseSeeder extends Seeder
         $almacen = $usuarios[Rol::OperadorAlmacen->value];
         $gestor = $usuarios[Rol::GestorInventario->value];
 
+        // Se reparte el llenado intercalando los cuatro pasillos, en vez de
+        // llenar uno entero, para que el plano se vea poblado por todas partes.
+        $porPasillo = [];
+        foreach ($normales as $ubicacion) {
+            $porPasillo[$ubicacion->pasillo][] = $ubicacion;
+        }
+        $intercaladas = [];
+        $maximo = max(array_map('count', $porPasillo));
+        for ($i = 0; $i < $maximo; $i++) {
+            foreach ($porPasillo as $lista) {
+                if (isset($lista[$i])) {
+                    $intercaladas[] = $lista[$i];
+                }
+            }
+        }
+
         $siguienteLibre = 0;
-        $recibir = function (Lote $lote, float $cantidad) use ($servicio, $recepcion, $normales, &$siguienteLibre): Ubicacion {
-            $ubicacion = $normales[$siguienteLibre++];
+        $recibir = function (Lote $lote, float $cantidad) use ($servicio, $recepcion, $intercaladas, &$siguienteLibre): Ubicacion {
+            $ubicacion = $intercaladas[$siguienteLibre++];
             $servicio->registrar(TipoMovimiento::Recepcion, $lote, $cantidad, $recepcion, destino: $ubicacion);
 
             return $ubicacion;
@@ -151,10 +167,56 @@ class DatabaseSeeder extends Seeder
         $guantes = Articulo::factory()->sinCaducidad()->create(['codigo' => 'GUA-001', 'nombre' => 'Guantes de nitrilo talla M', 'unidad' => 'ud']);
         $recibir(Lote::factory()->for($guantes)->sinCaducidad()->create(['codigo_lote' => 'GUA-0001', 'fecha_recepcion' => '2026-10-12']), 100);
 
+        // Catálogo amplio de material veterinario repartido por los pasillos,
+        // con estados variados (caducado, caduca pronto, válido y sin caducidad).
+        $crearYRecibir = function (array $item, callable $recibe): void {
+            [$codigo, $nombre, $unidad, $caducidad, $cantidad] = $item;
+            if ($caducidad === null) {
+                $articulo = Articulo::factory()->sinCaducidad()->create(['codigo' => $codigo, 'nombre' => $nombre, 'unidad' => $unidad]);
+                $lote = Lote::factory()->for($articulo)->sinCaducidad()->create(['codigo_lote' => $codigo.'-01', 'fecha_recepcion' => '2026-10-20']);
+            } else {
+                $articulo = Articulo::factory()->create(['codigo' => $codigo, 'nombre' => $nombre, 'unidad' => $unidad]);
+                $lote = $this->lote($articulo, $codigo.'-01', '2026-10-20', $caducidad);
+            }
+            $recibe($lote, $cantidad);
+        };
+
+        $catalogo = [
+            ['DESP-001', 'Desparasitante oral comprimidos', 'caja', '2027-04-01', 45],
+            ['POUR-001', 'Antiparasitario pour-on 1 L', 'frasco', '2027-02-15', 30],
+            ['FLUN-001', 'Flunixino meglumina inyectable', 'vial', '2026-11-10', 24],
+            ['DEXA-001', 'Dexametasona inyectable', 'vial', '2027-01-20', 36],
+            ['ADE-001', 'Vitaminas AD3E inyectable', 'vial', '2027-05-01', 40],
+            ['OXIT-001', 'Oxitetraciclina inyectable', 'vial', '2026-10-28', 18],
+            ['CALC-001', 'Calcio inyectable', 'frasco', '2027-03-10', 28],
+            ['SUERO-001', 'Suero fisiológico 500 ml', 'bolsa', '2027-08-01', 60],
+            ['CLOR-001', 'Clorhexidina 1 L', 'bote', '2027-06-01', 22],
+            ['POVI-001', 'Povidona yodada 1 L', 'bote', '2027-06-01', 20],
+            ['GEL-001', 'Gel ecográfico 5 L', 'garrafa', '2028-01-01', 15],
+            ['MAMI-001', 'Antibiótico intramamario', 'jeringa', '2026-11-08', 30],
+            ['SUTU-001', 'Hilo de sutura reabsorbible', 'sobre', '2027-09-01', 50],
+            ['GUAP-001', 'Guantes de palpación', 'caja', null, 40],
+            ['AGUJ-001', 'Agujas hipodérmicas 18G', 'caja', null, 55],
+            ['VEND-001', 'Venda cohesiva', 'caja', null, 35],
+        ];
+        foreach ($catalogo as $item) {
+            $crearYRecibir($item, $recibir);
+        }
+
+        // Más productos de cadena de frío que acaban de llenar la cámara.
+        $catalogoFrio = [
+            ['OXIP-001', 'Oxitocina inyectable', 'vial', '2027-02-01', 20],
+            ['RABIA-001', 'Vacuna antirrábica', 'dosis', '2027-07-01', 40],
+            ['INSU-001', 'Insulina veterinaria', 'vial', '2026-11-11', 12],
+        ];
+        foreach ($catalogoFrio as $item) {
+            $crearYRecibir($item, $recibirFrio);
+        }
+
         // Salidas: dos consumos, un traslado interno y una baja por caducidad.
         $servicio->registrar(TipoMovimiento::Consumo, $vacunaValida, 30, $almacen, origen: $ubVacunaValida);
         $servicio->registrar(TipoMovimiento::Consumo, $amoxicilinaPrimero, 20, $almacen, origen: $ubAmoxicilinaPrimero);
-        $servicio->registrar(TipoMovimiento::Traslado, $meloxicamLote, 70, $almacen, origen: $ubMeloxicam, destino: $normales[$siguienteLibre++]);
+        $servicio->registrar(TipoMovimiento::Traslado, $meloxicamLote, 70, $almacen, origen: $ubMeloxicam, destino: $intercaladas[$siguienteLibre++]);
         $servicio->registrar(TipoMovimiento::Baja, $ivermectinaVencida, 25, $gestor, origen: $ubIvermectinaVencida, motivo: 'caducado');
     }
 
