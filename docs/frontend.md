@@ -104,3 +104,13 @@ Fase final. Recreación con Three.js del almacén, con los **mismos datos, estad
 - **Cámara orbital** con zoom, iluminación sencilla (ambiente + hemisférica + una direccional) y un **botón para centrar en un pasillo**.
 - **Rendimiento**: las cajas se dibujan con instancias (`InstancedMesh` vía `<Instances>` de drei), un único lote de dibujo para todas; con el almacén lleno (unas cien posiciones) va fluido en cualquier GPU modesta. En desarrollo se muestra un panel de fotogramas (`<Stats />`, solo fuera de producción) para comprobarlo en el propio navegador.
 - Cuando llega una operación por el feed de actividad en vivo, la posición afectada se resalta unos segundos (ver «Actividad en vivo»).
+
+### Modo demostración (solo admin)
+
+Un botón «iniciar demostración» pone en marcha a un **operario virtual** que pica, una a una, la cola real de tareas pendientes (la orden más antigua primero, en su orden de ruta). Cada confirmación es una llamada real a la API (la misma que usa la PDA): genera un movimiento de verdad, aparece en el feed del admin y actualiza las cajas del plano. **La animación nunca toca el stock por su cuenta**; solo dispara la confirmación real en el momento justo.
+
+- El operario camina hasta la posición, y si el nivel queda por encima de la **altura alcanzable sin escalera** (medida del archivo de configuración), saca una escalera, sube, coge la caja y baja. Luego vuelve y la deja en un carro de picking.
+- **La caja cambia de estado en el momento exacto de la confirmación**, nunca antes de que el operario «llegue».
+- Controles: **pausar/reanudar**, **acelerar** (la velocidad del paseo, no cambia qué se confirma) y **reiniciar** (vuelve a caminar hacia la tarea actual desde el principio; no deshace ninguna confirmación ya hecha, eso es imposible, los movimientos son inmutables).
+- Si el sistema detecta `prefers-reduced-motion`, no hay paseo: el operario no se mueve y solo se ven los cambios de estado de las cajas, con una pausa breve entre cada uno para que se noten.
+- El operario virtual usa un usuario de demostración propio (rol operador de almacén), creado solo en local la primera vez que hace falta: `docs/diseno.md` y `docs/seguridad.md`.

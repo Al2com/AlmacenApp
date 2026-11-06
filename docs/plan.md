@@ -47,6 +47,7 @@ Para enseñar la aplicación en marcha (no es una fase de construcción, es una 
 
 - `php artisan almacen:demo`: llena el almacén y lanza un pedido largo. Solo en local; detalle en `docs/diseno.md`.
 - Estados de posición ampliados (`en_picking`, `recogida`) y el detalle con «para qué orden» y «lo que queda tras recoger»: `docs/frontend.md`.
+- Modo demostración en el plano 3D (solo admin): un operario virtual pica la cola real de tareas por la API, con animación, escalera para los niveles altos y controles de pausa/velocidad/reinicio. Respeta `prefers-reduced-motion`. Detalle en `docs/frontend.md` y `docs/diseno.md`.
 
 ## Decisiones abiertas
 

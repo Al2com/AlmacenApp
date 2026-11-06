@@ -72,6 +72,14 @@ El detalle del orden está en `docs/plan.md`.
 
 `php artisan almacen:demo` llena el almacén para enseñar la aplicación en marcha: 25 artículos, el 85-90 % de las posiciones ocupadas (lotes con fechas variadas: la mayoría en buen estado, algunos que caducan en menos de 7 días y un par ya caducados) y un pedido largo (25 líneas, una por artículo) ya lanzado, con dos líneas sin stock suficiente para ver la preparación parcial. Es determinista (sin Faker ni azar): siempre deja el mismo resultado. **Se niega a ejecutarse si `APP_ENV=production`.**
 
+### Modo demostración (operario virtual)
+
+Desde el plano 3D, el admin puede poner en marcha un **operario virtual** que pica, uno a uno, los pendientes reales de la cola de picking (la orden activa más antigua primero, en su orden de ruta), confirmando con el mismo servicio `ConfirmarTarea` que usa la PDA. No es una simulación aparte: cada confirmación genera un movimiento real, con su usuario, su lote y su ubicación, igual que si lo hubiera hecho una persona.
+
+- Las confirmaciones se atribuyen a un **usuario de demostración** propio (`demo.operario@almacen.local`, rol operador de almacén), no al admin que puso en marcha la demostración. Se crea la primera vez que hace falta y **nunca en producción** (igual que `almacen:demo`).
+- El endpoint que lo mueve (`GET /api/demostracion/estado`, `POST /api/demostracion/confirmar`) está detrás de la policy de admin y del mismo cierre de producción.
+- El front decide la ruta y el ritmo (caminar, escalera, pausar...); el backend solo expone «cuál es la siguiente tarea» y «confirma la siguiente», nada más. La animación no puede, por tanto, tocar el stock por su cuenta.
+
 ## Límites conocidos
 
 - La capacidad se mide en unidades, así que mezcla artículos de tamaños distintos. Una mejora posible es medirla en huecos de palé o en volumen.
