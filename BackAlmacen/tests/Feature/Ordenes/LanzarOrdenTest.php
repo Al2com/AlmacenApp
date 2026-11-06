@@ -125,4 +125,29 @@ class LanzarOrdenTest extends TestCase
 
         $this->assertLessThan($secuenciaLejos, $secuenciaCerca);
     }
+
+    public function test_dos_ordenes_seguidas_no_reservan_el_mismo_stock(): void
+    {
+        $articulo = Articulo::factory()->create();
+        $lote = Lote::factory()->for($articulo)->create(['caducidad' => '2027-02-01']);
+        $this->stock(Ubicacion::factory()->create(), $lote, 10);
+
+        $lanzar = new LanzarOrden;
+        $lanzar->lanzar(User::factory()->create(), 'OP-6', [
+            ['articulo' => $articulo, 'cantidad' => 7],
+        ]);
+        $lanzar->lanzar(User::factory()->create(), 'OP-7', [
+            ['articulo' => $articulo, 'cantidad' => 7],
+        ]);
+
+        // El saldo nunca reserva más de lo que hay: el total reservado es 10,
+        // no 14 (7+7), aunque las dos órdenes hayan pedido 7 cada una.
+        $this->assertDatabaseHas('stock', ['lote_id' => $lote->id, 'cantidad_reservada' => 10]);
+
+        // La primera orden se lleva sus 7 completos; la segunda solo los 3 que quedaban.
+        $primeraOrden = TareaPicking::query()->whereHas('ordenLinea.orden', fn ($q) => $q->where('codigo', 'OP-6'))->sum('cantidad');
+        $segundaOrden = TareaPicking::query()->whereHas('ordenLinea.orden', fn ($q) => $q->where('codigo', 'OP-7'))->sum('cantidad');
+        $this->assertSame(7.0, (float) $primeraOrden);
+        $this->assertSame(3.0, (float) $segundaOrden);
+    }
 }

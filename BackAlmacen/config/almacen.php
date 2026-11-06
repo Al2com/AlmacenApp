@@ -14,4 +14,16 @@ return [
 
     'dias_aviso_caducidad' => (int) env('ALMACEN_DIAS_AVISO_CADUCIDAD', 7),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Ventana de «recogida»
+    |--------------------------------------------------------------------------
+    |
+    | Segundos que una posición muestra el estado «recogida» justo después de
+    | confirmarse su tarea, antes de volver a su estado normal.
+    |
+    */
+
+    'segundos_recogida' => (int) env('ALMACEN_SEGUNDOS_RECOGIDA', 20),
+
 ];

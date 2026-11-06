@@ -62,13 +62,17 @@ class Panel
     }
 
     /**
-     * Cada posición de la estantería con su estado y su contenido.
+     * Cada posición de la estantería con su estado y su contenido. El estado
+     * distingue si lo reservado es la siguiente tarea de su orden (en_picking),
+     * otra tarea en cola (reservada) o se acaba de recoger (recogida).
      *
      * @return list<array<string, mixed>>
      */
     public function estanteria(): array
     {
         $hoy = FechaSimulada::hoy();
+        $limite = $hoy->copy()->addDays($this->umbralCaducidad());
+        ['pendientes' => $pendientes, 'recogidas' => $recogidas] = $this->datosDeTareas();
 
         $ubicaciones = Ubicacion::query()
             ->with(['stock' => fn ($q) => $q->where('cantidad', '>', 0), 'stock.lote.articulo'])
@@ -77,23 +81,115 @@ class Panel
             ->orderBy('nivel')
             ->get();
 
-        return $ubicaciones->map(fn (Ubicacion $ubicacion) => [
-            'codigo' => $ubicacion->codigo,
-            'pasillo' => $ubicacion->pasillo,
-            'estanteria' => $ubicacion->estanteria,
-            'nivel' => $ubicacion->nivel,
-            'refrigerado' => $ubicacion->tipo === 'refrigerado',
-            'estado' => $this->estado($ubicacion->stock, $hoy),
-            'contenido' => $ubicacion->stock->map(fn (Stock $s) => [
-                'articulo' => $s->lote->articulo->nombre,
-                'codigo_articulo' => $s->lote->articulo->codigo,
-                'lote' => $s->lote->codigo_lote,
-                'caducidad' => $s->lote->caducidad?->toDateString(),
-                'disponible' => (float) $s->cantidad - (float) $s->cantidad_reservada,
-                'reservada' => (float) $s->cantidad_reservada,
-                'total' => (float) $s->cantidad,
-            ])->values()->all(),
-        ])->all();
+        return $ubicaciones->map(function (Ubicacion $ubicacion) use ($hoy, $limite, $pendientes, $recogidas) {
+            $pendientesAqui = $pendientes[$ubicacion->id] ?? [];
+            $recogidasAqui = $recogidas[$ubicacion->id] ?? [];
+
+            return [
+                'codigo' => $ubicacion->codigo,
+                'pasillo' => $ubicacion->pasillo,
+                'estanteria' => $ubicacion->estanteria,
+                'nivel' => $ubicacion->nivel,
+                'refrigerado' => $ubicacion->tipo === 'refrigerado',
+                'estado' => $this->estado($ubicacion->stock, $hoy, $limite, $pendientesAqui, $recogidasAqui),
+                'contenido' => $this->contenido($ubicacion->stock, $pendientesAqui, $recogidasAqui),
+            ];
+        })->all();
+    }
+
+    /**
+     * @param  Collection<int, Stock>  $stock
+     * @param  list<array{lote_id: int, orden: string, cantidad: float, es_siguiente: bool}>  $pendientes
+     * @param  list<array{articulo: string, codigo_articulo: string, lote: string, cantidad: float, orden: string}>  $recogidas
+     * @return list<array<string, mixed>>
+     */
+    private function contenido(Collection $stock, array $pendientes, array $recogidas): array
+    {
+        $contenido = $stock->map(fn (Stock $s) => [
+            'articulo' => $s->lote->articulo->nombre,
+            'codigo_articulo' => $s->lote->articulo->codigo,
+            'lote' => $s->lote->codigo_lote,
+            'caducidad' => $s->lote->caducidad?->toDateString(),
+            'disponible' => (float) $s->cantidad - (float) $s->cantidad_reservada,
+            'reservada' => (float) $s->cantidad_reservada,
+            'total' => (float) $s->cantidad,
+            'reservas' => collect($pendientes)
+                ->where('lote_id', $s->lote_id)
+                ->map(fn (array $p) => ['orden' => $p['orden'], 'cantidad' => $p['cantidad']])
+                ->values()->all(),
+        ])->values()->all();
+
+        // Sin stock (se consumió todo) pero recién recogida: se muestra igual,
+        // para que la caja no desaparezca antes de que se vea el cambio.
+        if ($contenido === [] && $recogidas !== []) {
+            return collect($recogidas)->map(fn (array $r) => [
+                'articulo' => $r['articulo'],
+                'codigo_articulo' => $r['codigo_articulo'],
+                'lote' => $r['lote'],
+                'caducidad' => null,
+                'disponible' => 0.0,
+                'reservada' => 0.0,
+                'total' => 0.0,
+                'reservas' => [],
+                'recogida' => $r['cantidad'],
+                'recogida_orden' => $r['orden'],
+            ])->values()->all();
+        }
+
+        return $contenido;
+    }
+
+    /**
+     * Tareas pendientes (agrupadas por orden, para saber cuál es la siguiente)
+     * y tareas recién confirmadas, ambas indexadas por ubicación.
+     *
+     * @return array{pendientes: array<int, list<array{lote_id: int, orden: string, cantidad: float, es_siguiente: bool}>>, recogidas: array<int, list<array{articulo: string, codigo_articulo: string, lote: string, cantidad: float, orden: string}>>}
+     */
+    private function datosDeTareas(): array
+    {
+        $pendientes = [];
+        $porOrden = TareaPicking::query()
+            ->where('estado', EstadoTarea::Pendiente->value)
+            ->whereHas('ordenLinea.orden', fn ($q) => $q->whereIn('estado', [
+                EstadoOrden::Lanzada->value,
+                EstadoOrden::EnPicking->value,
+            ]))
+            ->with('ordenLinea.orden')
+            ->orderBy('secuencia')
+            ->get()
+            ->groupBy(fn (TareaPicking $t) => $t->ordenLinea->orden_id);
+
+        foreach ($porOrden as $tareasDeLaOrden) {
+            $siguienteId = $tareasDeLaOrden->first()->id;
+            foreach ($tareasDeLaOrden as $tarea) {
+                $pendientes[$tarea->ubicacion_id][] = [
+                    'lote_id' => $tarea->lote_id,
+                    'orden' => $tarea->ordenLinea->orden->codigo,
+                    'cantidad' => (float) $tarea->cantidad,
+                    'es_siguiente' => $tarea->id === $siguienteId,
+                ];
+            }
+        }
+
+        $recogidas = [];
+        $ventana = (int) config('almacen.segundos_recogida', 20);
+        $confirmadasRecientes = TareaPicking::query()
+            ->where('estado', EstadoTarea::Confirmada->value)
+            ->where('confirmada_at', '>=', now()->subSeconds($ventana))
+            ->with(['lote.articulo', 'ordenLinea.orden'])
+            ->get();
+
+        foreach ($confirmadasRecientes as $tarea) {
+            $recogidas[$tarea->ubicacion_id][] = [
+                'articulo' => $tarea->lote->articulo->nombre,
+                'codigo_articulo' => $tarea->lote->articulo->codigo,
+                'lote' => $tarea->lote->codigo_lote,
+                'cantidad' => (float) $tarea->cantidad,
+                'orden' => $tarea->ordenLinea->orden->codigo,
+            ];
+        }
+
+        return ['pendientes' => $pendientes, 'recogidas' => $recogidas];
     }
 
     /**
@@ -176,16 +272,16 @@ class Panel
     }
 
     /**
+     * Prioridad: una caducidad manda siempre; si no, se acaba de recoger; si
+     * no, es la siguiente tarea de su orden (en_picking) o espera su turno
+     * (reservada); si no, ocupada o libre.
+     *
      * @param  Collection<int, Stock>  $stock
+     * @param  list<array{lote_id: int, orden: string, cantidad: float, es_siguiente: bool}>  $pendientes
+     * @param  list<array{articulo: string, codigo_articulo: string, lote: string, cantidad: float, orden: string}>  $recogidas
      */
-    private function estado(Collection $stock, Carbon $hoy): string
+    private function estado(Collection $stock, Carbon $hoy, Carbon $limite, array $pendientes, array $recogidas): string
     {
-        if ($stock->isEmpty()) {
-            return 'libre';
-        }
-
-        $limite = $hoy->copy()->addDays($this->umbralCaducidad());
-
         if ($stock->contains(fn (Stock $s) => $s->lote->caducidad !== null && $s->lote->caducidad->lessThan($hoy))) {
             return 'caducada';
         }
@@ -194,8 +290,20 @@ class Panel
             return 'caduca_pronto';
         }
 
-        if ($stock->contains(fn (Stock $s) => (float) $s->cantidad_reservada > 0)) {
+        if ($recogidas !== []) {
+            return 'recogida';
+        }
+
+        if (collect($pendientes)->contains('es_siguiente', true)) {
+            return 'en_picking';
+        }
+
+        if ($pendientes !== [] || $stock->contains(fn (Stock $s) => (float) $s->cantidad_reservada > 0)) {
             return 'reservada';
+        }
+
+        if ($stock->isEmpty()) {
+            return 'libre';
         }
 
         return 'ocupada';
