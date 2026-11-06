@@ -18,6 +18,8 @@ use Illuminate\Support\Carbon;
  * @property string $cantidad
  * @property string|null $motivo
  * @property Carbon $created_at
+ * @property-read Ubicacion|null $ubicacionOrigen
+ * @property-read Ubicacion|null $ubicacionDestino
  */
 class Movimiento extends Model
 {

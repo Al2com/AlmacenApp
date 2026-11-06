@@ -6,6 +6,7 @@ use App\Http\Requests\CambiarPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\RegistroDeActividad;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,6 +36,9 @@ class AuthController extends Controller
 
         if (! $user instanceof User || ! $user->activo || ! $passwordValido) {
             Log::warning('Intento de login fallido', ['email' => $email, 'ip' => $request->ip()]);
+
+            $actividad = new RegistroDeActividad;
+            $actividad->registrar('login_fallido', null, null, $actividad->enmascararCorreo($email));
 
             // Mismo mensaje tanto si el usuario no existe como si falla la contraseña.
             throw ValidationException::withMessages(['email' => [trans('auth.failed')]]);

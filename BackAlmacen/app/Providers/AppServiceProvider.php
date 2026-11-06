@@ -45,5 +45,11 @@ class AppServiceProvider extends ServiceProvider
         // El inventario (ajustes, traslados, bajas y reservas) lo gestionan
         // admin y gestor de inventario (docs/diseno.md).
         Gate::define('gestionar-inventario', fn (User $user): bool => in_array($user->rol, [Rol::Admin, Rol::GestorInventario], true));
+
+        // El feed de actividad en vivo es solo del admin (docs/seguridad.md).
+        Gate::define('ver-actividad', fn (User $user): bool => $user->rol === Rol::Admin);
+
+        // Límite propio del feed, que el front consulta cada pocos segundos.
+        RateLimiter::for('actividad', fn (Request $request): Limit => Limit::perMinute(60)->by((string) $request->user()?->getAuthIdentifier()));
     }
 }

@@ -120,6 +120,14 @@ class MatrizRolesTest extends TestCase
     }
 
     #[DataProvider('roles')]
+    public function test_el_feed_de_actividad_solo_lo_ve_el_admin(Rol $rol, bool $gestionaUsuarios, bool $vePanel): void
+    {
+        $user = User::factory()->create(['rol' => $rol]);
+
+        $this->actingAs($user)->getJson('/api/panel/actividad')->assertStatus($rol === Rol::Admin ? 200 : 403);
+    }
+
+    #[DataProvider('roles')]
     public function test_el_inventario_lo_gestionan_admin_y_gestor(Rol $rol, bool $gestionaUsuarios, bool $vePanel): void
     {
         $gestionaInventario = in_array($rol, [Rol::Admin, Rol::GestorInventario], true);

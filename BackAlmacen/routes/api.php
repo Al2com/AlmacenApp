@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActividadController;
 use App\Http\Controllers\ArticuloController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InventarioController;
@@ -33,6 +34,10 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
             Route::get('/fefo', [PanelController::class, 'fefo']);
             Route::get('/movimientos', [PanelController::class, 'movimientos']);
             Route::get('/flujo', [PanelController::class, 'flujo']);
+
+            // Feed de actividad en vivo: solo admin y con su propio límite.
+            Route::get('/actividad', [ActividadController::class, 'index'])
+                ->middleware(['can:ver-actividad', 'throttle:actividad']);
         });
 
         // Recepciones: solo admin y operador de recepción.

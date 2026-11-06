@@ -7,7 +7,9 @@ use App\Http\Requests\ActualizarUsuarioRequest;
 use App\Http\Requests\GuardarUsuarioRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\RegistroDeActividad;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
@@ -40,6 +42,7 @@ class UsuarioController extends Controller
         ]);
 
         Log::info('Cuenta creada', ['admin' => $request->user()?->getAuthIdentifier(), 'usuario' => $user->id]);
+        $this->anotar($request, "cuenta creada: {$user->nombre}");
 
         return UserResource::make($user)->response()->setStatusCode(201);
     }
@@ -51,7 +54,19 @@ class UsuarioController extends Controller
         $usuario->fill($request->validated())->save();
 
         Log::info('Cuenta actualizada', ['admin' => $request->user()?->getAuthIdentifier(), 'usuario' => $usuario->id]);
+        $this->anotar($request, "cuenta actualizada: {$usuario->nombre}");
 
         return new UserResource($usuario);
+    }
+
+    private function anotar(Request $request, string $detalle): void
+    {
+        $admin = $request->user();
+        (new RegistroDeActividad)->registrar(
+            'cambio_config',
+            $admin instanceof User ? $admin : null,
+            null,
+            $detalle,
+        );
     }
 }

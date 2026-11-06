@@ -13,6 +13,7 @@ use App\Models\Movimiento;
 use App\Models\Ubicacion;
 use App\Models\User;
 use App\Services\DarDeBaja;
+use App\Services\RegistroDeActividad;
 use App\Services\RegularizarStock;
 use App\Services\ReservaDeStock;
 use App\Services\TrasladarStock;
@@ -71,12 +72,12 @@ class InventarioController extends Controller
         return $this->resource($movimiento);
     }
 
-    public function reservar(ReservarRequest $request): JsonResponse
+    public function reservar(ReservarRequest $request, RegistroDeActividad $actividad): JsonResponse
     {
-        $resultado = $this->reservas->reservar(
-            Articulo::findOrFail($request->integer('articulo_id')),
-            $request->float('cantidad'),
-        );
+        $articulo = Articulo::findOrFail($request->integer('articulo_id'));
+        $resultado = $this->reservas->reservar($articulo, $request->float('cantidad'));
+
+        $actividad->registrar('reserva', $this->usuario($request), $resultado['reservado'], $articulo->nombre);
 
         return response()->json([
             'reservado' => $resultado['reservado'],
