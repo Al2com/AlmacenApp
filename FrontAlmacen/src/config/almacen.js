@@ -6,7 +6,7 @@ export const ALMACEN = {
   anchoBahia: 1.15, // ancho de cada bahía (3D, eje X)
   alturaNivel: 1.15, // altura de cada nivel (3D, eje Y)
   fondoEstanteria: 1.2, // fondo de la estantería (3D, eje Z)
-  anchoPasillo: 3.4, // hueco entre estanterías (pasillo), a escala realista
+  anchoPasillo: 4.4, // hueco entre estanterías (pasillo); holgado para ver trabajar al operario
   alturaMaxAlcanzable: 2.0, // metros desde el suelo; por encima hace falta escalera
 }
 
