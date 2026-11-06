@@ -9,8 +9,10 @@ export function Layout({ children }) {
   return (
     <>
       <header className="barra">
-        <span className="logo">AlmacenApp</span>
-        <nav>
+        <span className="logo">
+          Almacen<span className="logo-app">App</span>
+        </span>
+        <nav aria-label="Menú principal">
           {menu.map((entrada) => (
             <NavLink
               key={entrada.ruta}
@@ -23,9 +25,12 @@ export function Layout({ children }) {
           ))}
         </nav>
         <div className="usuario">
-          <span>
-            {usuario?.nombre} · {NOMBRE_ROL[usuario?.rol] ?? usuario?.rol}
-          </span>
+          <div className="datos">
+            <div className="nombre">{usuario?.nombre}</div>
+            <div className="rol">
+              {NOMBRE_ROL[usuario?.rol] ?? usuario?.rol}
+            </div>
+          </div>
           <button type="button" className="salir" onClick={salir}>
             salir
           </button>

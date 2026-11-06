@@ -5,11 +5,41 @@ import { GraficoHoras } from '../../components/GraficoHoras'
 import { useSesion } from '../../auth/contexto'
 import { ROLES } from '../../auth/roles'
 
-const ETIQUETAS_CIFRAS = {
-  lotes_caducan_pronto: 'caducan en 7 días',
-  ordenes_en_curso: 'órdenes en curso',
-  tareas_pendientes: 'tareas pendientes',
-  incidencias_abiertas: 'incidencias abiertas',
+const KPIS = [
+  {
+    clave: 'lotes_caducan_pronto',
+    label: 'caducan en 7 días',
+    note: 'salen primero en el picking',
+    alerta: true,
+  },
+  {
+    clave: 'ordenes_en_curso',
+    label: 'órdenes en curso',
+    note: 'lanzadas, en picking o preparadas',
+    alerta: false,
+  },
+  {
+    clave: 'tareas_pendientes',
+    label: 'tareas de picking pendientes',
+    note: 'en la cola de la PDA',
+    alerta: false,
+  },
+  {
+    clave: 'incidencias_abiertas',
+    label: 'incidencias abiertas',
+    note: 'picking sin material',
+    alerta: true,
+  },
+]
+
+function fechaDeHoy() {
+  const texto = new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
 
 export function Panel() {
@@ -44,7 +74,7 @@ export function Panel() {
   }, [])
 
   if (error) {
-    return <p className="error contenido">No se pudo cargar el panel.</p>
+    return <p className="error">No se pudo cargar el panel.</p>
   }
 
   if (!datos) {
@@ -52,27 +82,42 @@ export function Panel() {
   }
 
   return (
-    <section>
-      <h1>panel general</h1>
+    <section className="panel">
+      <p className="panel-fecha">{fechaDeHoy()}. Almacén central.</p>
 
       <div className="cifras">
-        {Object.entries(ETIQUETAS_CIFRAS).map(([clave, etiqueta]) => (
-          <div className="tarjeta cifra" key={clave}>
-            <div className="numero">{datos.cifras[clave]}</div>
-            <div className="etiqueta">{etiqueta}</div>
+        {KPIS.map((kpi) => (
+          <div
+            className={`cifra ${kpi.alerta ? 'alerta' : ''}`}
+            key={kpi.clave}
+          >
+            <div className="numero">{datos.cifras[kpi.clave]}</div>
+            <div className="etiqueta">{kpi.label}</div>
+            <div className="note">{kpi.note}</div>
           </div>
         ))}
       </div>
 
-      <Estanteria posiciones={datos.estanteria} />
-
-      <div className="columnas">
+      <div className="panel-cols">
+        <Estanteria posiciones={datos.estanteria} />
         <SalenPrimero lotes={datos.fefo} />
-        <div className="tarjeta">
-          <h2>entradas y salidas por hora</h2>
+      </div>
+
+      <div className="panel-cols">
+        <section aria-label="Entradas y salidas de hoy">
+          <h2>entradas y salidas de hoy</h2>
+          <div className="flujo-leyenda">
+            <span>
+              <span className="punto entrada" aria-hidden="true" /> entradas
+            </span>
+            <span>
+              <span className="punto salida" aria-hidden="true" /> salidas
+            </span>
+          </div>
           <GraficoHoras datos={datos.flujo} />
-          <UltimosMovimientos movimientos={datos.movimientos} />
-        </div>
+        </section>
+
+        <UltimosMovimientos movimientos={datos.movimientos} />
       </div>
 
       <BloqueDelRol rol={usuario.rol} fefo={datos.fefo} flujo={datos.flujo} />
@@ -82,91 +127,105 @@ export function Panel() {
 
 function SalenPrimero({ lotes }) {
   return (
-    <div className="tarjeta">
+    <section aria-label="Orden de salida">
       <h2>salen primero</h2>
+      <p className="subtitulo">
+        Orden FEFO para el próximo picking. Un lote caducado no se consume: va a
+        baja.
+      </p>
       {lotes.length === 0 ? (
         <p className="vacio">No hay lotes con saldo.</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>artículo</th>
-              <th>lote</th>
-              <th>caducidad</th>
-              <th>disponible</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lotes.map((lote) => (
-              <tr key={`${lote.codigo_articulo}-${lote.lote}`}>
-                <td>{lote.articulo}</td>
-                <td>{lote.lote}</td>
-                <td>{lote.caducidad ?? '—'}</td>
-                <td>
-                  {lote.disponible}
-                  {lote.para_baja && (
-                    <span className="marca-baja"> · baja</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ol className="fefo">
+          {lotes.map((lote, indice) => (
+            <li key={`${lote.codigo_articulo}-${lote.lote}`}>
+              <span className="n">{indice + 1}</span>
+              <span className="desc">
+                <span className="articulo">{lote.articulo}</span>
+                <span className="sub">
+                  {lote.lote} · {lote.disponible} disp.
+                </span>
+              </span>
+              <Etiqueta lote={lote} />
+            </li>
+          ))}
+        </ol>
       )}
-    </div>
+    </section>
   )
+}
+
+function Etiqueta({ lote }) {
+  if (lote.para_baja) {
+    return <span className="tag tag-baja">a baja</span>
+  }
+  if (lote.caducidad) {
+    return <span className="tag tag-fecha">caduca {lote.caducidad}</span>
+  }
+  return <span className="tag tag-neutro">sin caducidad</span>
 }
 
 function UltimosMovimientos({ movimientos }) {
   return (
-    <>
-      <h3>últimos movimientos</h3>
+    <section aria-label="Últimos movimientos">
+      <h2>últimos movimientos</h2>
       {movimientos.length === 0 ? (
         <p className="vacio">Sin movimientos todavía.</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>tipo</th>
-              <th>artículo</th>
-              <th>lote</th>
-              <th>cantidad</th>
-            </tr>
-          </thead>
-          <tbody>
-            {movimientos.map((m) => (
-              <tr key={m.id}>
-                <td>{m.tipo}</td>
-                <td>{m.articulo}</td>
-                <td>{m.lote}</td>
-                <td>{m.cantidad}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ul className="movs">
+          {movimientos.map((m) => (
+            <li key={m.id}>
+              <span className="hora">{hora(m.fecha)}</span>
+              <span className={`tipo mov-${m.tipo}`}>{m.tipo}</span>
+              <span className="desc">
+                {m.lote} en {ubicacionDe(m)}
+              </span>
+              <span className="cant">{m.cantidad}</span>
+              <span className="user">{m.usuario}</span>
+            </li>
+          ))}
+        </ul>
       )}
-    </>
+    </section>
   )
+}
+
+function hora(iso) {
+  return new Date(iso).toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function ubicacionDe(m) {
+  if (m.origen && m.destino) return `${m.origen} → ${m.destino}`
+  return m.destino ?? m.origen ?? '—'
 }
 
 function BloqueDelRol({ rol, fefo, flujo }) {
   if (rol === ROLES.gestor) {
     const pendientes = fefo.filter((lote) => lote.para_baja)
     return (
-      <div className="tarjeta" style={{ marginTop: '1.5rem' }}>
-        <h2>bajas pendientes de aprobar</h2>
+      <section aria-label="Pendiente de aprobar">
+        <h2>pendiente de tu aprobación</h2>
         {pendientes.length === 0 ? (
           <p className="vacio">No hay lotes caducados pendientes de baja.</p>
         ) : (
-          <ul>
+          <ul className="aprobaciones">
             {pendientes.map((lote) => (
               <li key={`${lote.codigo_articulo}-${lote.lote}`}>
-                {lote.articulo} · lote {lote.lote} · caducó el {lote.caducidad}
+                <div>
+                  <div className="titulo">baja del lote {lote.lote}</div>
+                  <div className="sub">
+                    {lote.articulo} · caducó el {lote.caducidad}
+                  </div>
+                </div>
+                <span className="tag tag-baja">{lote.disponible} a baja</span>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </section>
     )
   }
 
@@ -174,12 +233,19 @@ function BloqueDelRol({ rol, fefo, flujo }) {
     const entradas = flujo.reduce((suma, h) => suma + h.entradas, 0)
     const salidas = flujo.reduce((suma, h) => suma + h.salidas, 0)
     return (
-      <div className="tarjeta" style={{ marginTop: '1.5rem' }}>
-        <h2>actividad del día</h2>
-        <p>
-          entradas: {entradas} · salidas: {salidas}
-        </p>
-      </div>
+      <section aria-label="Actividad de hoy">
+        <h2>actividad de hoy</h2>
+        <div className="actividad">
+          <div>
+            <div className="numero">{entradas}</div>
+            <div className="note">unidades recibidas</div>
+          </div>
+          <div>
+            <div className="numero">{salidas}</div>
+            <div className="note">unidades consumidas o dadas de baja</div>
+          </div>
+        </div>
+      </section>
     )
   }
 
