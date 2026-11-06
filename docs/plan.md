@@ -29,9 +29,17 @@ Orden de trabajo para ir codificando. Cada paso debe quedar con sus tests en ver
 
 Pantalla móvil para el operador de almacén, con confirmación por códigos e incidencias.
 
-## Fase 4: vista 3D
+## Fase 4: actividad en vivo
 
-Recreación con Three.js de las posiciones, con los mismos estados y el mismo detalle que la estantería 2D.
+Feed de actividad en el panel del admin: cada operación (recepción, reserva, traslado, ajuste, baja) y los eventos de auditoría (accesos fallidos, cambios de configuración) aparecen en el momento, con hora, usuario, tipo, lote, ubicación y cantidad; en el plano, la posición afectada se resalta unos segundos. Primera versión con **consulta periódica cada 5 s** a un endpoint que devuelve lo nuevo desde la última marca de tiempo; solo admin; sin datos sensibles. Paso posterior anotado: tiempo real con Laravel Reverb (canal privado de admin, eventos `afterCommit`). Comportamiento en `docs/diseno.md`, pantalla en `docs/frontend.md`, endpoint en `docs/seguridad.md`.
+
+## Fase 5: configuración de medidas del almacén
+
+Un único archivo de configuración con las medidas del almacén (ancho de pasillo, fondo y ancho de estantería, altura de nivel, bahías por estantería), **compartido por la vista 2D y la 3D**, para cambiar la escala sin tocar los componentes.
+
+## Fase 6: vista 3D realista (gemelo digital)
+
+Fase final, apoyada en las dos anteriores. Recreación con Three.js con estanterías realistas (montantes, largueros, cajas o palés) y los mismos estados y detalle que la 2D, pasillos anchos a escala según la configuración de la fase 5, cámara orbital con zoom y botón para centrar en un pasillo, instancias (`InstancedMesh`) para ir fluido con cientos de posiciones, y el resaltado de la posición afectada cuando llega una operación del feed de la fase 4. La 2D accesible sigue siendo la alternativa.
 
 ## Decisiones abiertas
 

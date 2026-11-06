@@ -69,9 +69,13 @@ De arriba abajo:
 3. Estantería en alzado: selector de pasillo con su ocupación, rejilla de 10 bahías por 3 niveles, leyenda, y debajo el detalle de la posición pulsada (artículo, lote, caducidad, disponible de total). Es el sustituto 2D de la vista 3D. Tiene un **control de densidad** (compacta/ampliada): en ampliada cada celda muestra el código de artículo y el disponible sin tener que pulsar, con scroll horizontal si no cabe en la pantalla. Las posiciones con **stock reservado** llevan una marca `R` con la cantidad.
 4. «Salen primero»: los lotes que toca consumir antes, en orden FEFO. Un lote caducado aparece el primero pero marcado para baja, no para consumo.
 5. Gráfico de entradas y salidas por hora y últimos movimientos.
-6. Bloque propio del rol: el gestor ve conteos y bajas pendientes de aprobar; el admin ve la actividad del día por rol.
+6. Bloque propio del rol: el gestor ve conteos y bajas pendientes de aprobar; el admin ve la actividad del día por rol y el **feed de actividad en vivo** (ver abajo).
 
 De dónde sale cada dato (para construir los endpoints): las cifras y el orden FEFO se calculan sobre `stock` y `lotes`; la estantería sale de `ubicaciones` (pasillo, estantería, nivel) cruzada con `stock`; los movimientos y el gráfico, de `movimientos` agrupados por hora y tipo.
+
+### Actividad en vivo (solo admin)
+
+El admin ve un feed que muestra cada operación en cuanto ocurre —hora, usuario, tipo (recepción, reserva, traslado, ajuste, baja), lote, ubicación y cantidad— y los eventos de auditoría (accesos fallidos, cambios de configuración). Cuando llega una operación, en el plano la posición afectada se **resalta unos segundos**. No muestra datos sensibles: ni contraseñas, ni tokens, ni correos completos. Primera versión por **consulta periódica cada 5 s** a un endpoint que devuelve lo nuevo desde la última marca de tiempo; el comportamiento, las fuentes y el paso a tiempo real están en `docs/diseno.md`.
 
 ## Stock y lotes (`/stock`)
 
@@ -85,6 +89,12 @@ Lectura para todos los roles; las acciones de inventario, solo para admin y gest
 
 Pendiente de diseñar. Debe ser de una sola mano en móvil: una tarea cada vez, en orden de ruta, con la ubicación destacada, el lote y la cantidad. Confirmar pide el código de ubicación, el de lote y la cantidad; si no coincide, avisa; si no hay material, permite abrir una incidencia.
 
-## Vista 3D (`/plano`)
+## Vista 3D / gemelo digital (`/plano`)
 
-Fase 4. Debe usar los mismos datos y los mismos estados que la estantería 2D: una posición ocupada, una que caduca pronto, una caducada, una reservada. Pulsar una caja abre el mismo detalle de posición.
+Fase final. Recreación con Three.js del almacén, con los **mismos datos, estados y detalle** que la estantería 2D (ocupada, caduca pronto, caducada, reservada); pulsar una caja abre **el mismo detalle de posición** que la 2D. La **vista 2D accesible sigue existiendo** como alternativa: la 3D no es la única forma de ver el stock.
+
+- **Estanterías realistas**: montantes verticales, largueros horizontales por nivel y cajas o palés apoyados sobre ellos, con los **colores de estado de siempre** (libre, ocupada, caduca pronto, caducada, reservada). Suelo con marcas de pasillo e iluminación sencilla.
+- **Pasillos anchos y a escala creíble.** Todas las medidas —ancho de pasillo, fondo y ancho de estantería, altura de nivel, bahías por estantería— viven en un **único archivo de configuración compartido** entre la vista 2D y la 3D, y se pueden cambiar sin tocar los componentes.
+- **Cámara orbital** con zoom y un **botón para centrar en un pasillo**.
+- **Rendimiento**: las cajas se dibujan con instancias (`InstancedMesh`); debe ir fluido con unas cuantas centenas de posiciones.
+- Cuando llega una operación por el feed de actividad en vivo, la posición afectada se resalta unos segundos (ver «Actividad en vivo»).

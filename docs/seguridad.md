@@ -25,6 +25,7 @@ Borrador 1 (5 de noviembre de 2026). Es un proyecto de formación, pero se const
 - CORS limitado al origen del front. Límite general de peticiones en la API, además del propio del login.
 - `APP_DEBUG` a falso fuera de local, para que ningún error enseñe trazas ni rutas internas. HTTPS obligatorio en producción.
 - Los movimientos guardan quién los hizo. Además se registran los intentos de login fallidos y los cambios de configuración (usuarios, ubicaciones, fecha simulada). Nunca se escriben contraseñas ni tokens en los registros.
+- El endpoint del feed de actividad en vivo pasa por policy de **admin**, tiene su **propio límite de peticiones** (se consulta cada pocos segundos) y **no devuelve datos de otros roles** ni datos sensibles (ni contraseñas, ni tokens, ni correos completos). Cuando se pase a tiempo real con Laravel Reverb, el canal es **privado y se autoriza solo al admin**.
 
 ## Datos y entorno
 

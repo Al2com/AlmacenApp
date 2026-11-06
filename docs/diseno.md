@@ -40,12 +40,24 @@ Para empezar, confirmar el picking descuenta el material (`consumo`). Más adela
 - **Orden de producción.** Producción lanza la orden con sus líneas, el sistema reserva por FEFO y genera las tareas, el operador de almacén las recoge en orden de ruta desde la PDA y confirma, la orden queda como preparada y producción confirma que la ha recibido.
 - **Conteo.** El gestor lanza un conteo de una zona, el operador cuenta sin ver la cifra del sistema, el sistema calcula la diferencia y el gestor decide si la aprueba. Solo entonces se genera el movimiento de ajuste.
 
+## Actividad en vivo (panel del admin)
+
+El panel del admin muestra un feed con cada operación en el momento en que ocurre: hora, usuario, tipo (recepción, reserva, traslado, ajuste, baja), lote, ubicación y cantidad. En el plano, la posición afectada se resalta unos segundos. **Solo lo ve el admin.**
+
+Se alimenta de tres fuentes: los `movimientos`, las reservas de stock y los eventos de auditoría (accesos fallidos y cambios de configuración de usuarios, ubicaciones y fecha simulada). **No incluye datos sensibles**: ni contraseñas, ni tokens, ni correos completos.
+
+Primera versión por **consulta periódica**: el front pregunta cada 5 segundos a un endpoint que devuelve lo nuevo desde la última marca de tiempo. Paso posterior: tiempo real con **Laravel Reverb**, por un **canal privado autorizado solo para el admin**, lanzando los eventos **después de confirmar la transacción** (`afterCommit`) para no emitir operaciones que luego se deshacen.
+
 ## Plan por fases
 
 1. Recepciones, stock y FEFO.
 2. Órdenes de producción, reservas y picking.
 3. Pantalla de PDA para el operador de almacén.
-4. Vista 3D con Three.js.
+4. Actividad en vivo (feed del admin).
+5. Configuración de medidas del almacén compartida por 2D y 3D.
+6. Vista 3D realista (gemelo digital), apoyada en las dos anteriores.
+
+El detalle del orden está en `docs/plan.md`.
 
 ## Decisiones de implementación (inventario)
 
