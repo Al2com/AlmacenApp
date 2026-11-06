@@ -315,6 +315,28 @@ button {
   gap: 18px;
 }
 
+.densidad {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: #9fb0c8;
+}
+
+.densidad button {
+  min-height: 44px;
+  padding: 0 0.8rem;
+  border: 1.5px solid #3e5075;
+  background: transparent;
+  color: #e8edf5;
+  border-radius: 6px;
+}
+
+.densidad button.activo {
+  background: #1b2d5e;
+  border-color: var(--pos-ocupada);
+}
+
 .estanteria .pasillos {
   display: flex;
   flex-wrap: wrap;
@@ -413,6 +435,7 @@ button {
 }
 
 .posicion {
+  position: relative;
   min-height: 48px;
   border-radius: 5px;
   border: 1.5px solid transparent;
@@ -423,6 +446,54 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.reservado-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  background: #e7ecfb;
+  color: var(--azul);
+  border-radius: 4px;
+  padding: 0 3px;
+  line-height: 1.4;
+}
+
+/* Densidad ampliada: la celda muestra artículo y disponible sin pulsar. */
+.estanteria.denso .rack-filas {
+  min-width: 760px;
+}
+
+.estanteria.denso .rack-nivel {
+  grid-template-columns: repeat(10, minmax(64px, 1fr));
+}
+
+.estanteria.denso .posicion {
+  min-height: 70px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+}
+
+.celda {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1.1;
+}
+
+.celda-art {
+  font-size: 0.6rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.celda-qty {
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .posicion:disabled {

@@ -11,6 +11,7 @@ export function Estanteria({ posiciones }) {
   )
   const [pasillo, setPasillo] = useState(pasillos[0] ?? 1)
   const [seleccion, setSeleccion] = useState(null)
+  const [denso, setDenso] = useState(false)
 
   const ocupacion = useMemo(() => {
     const mapa = {}
@@ -33,7 +34,30 @@ export function Estanteria({ posiciones }) {
   }, [posiciones, pasillo])
 
   return (
-    <section className="estanteria" aria-label="Estantería">
+    <section
+      className={`estanteria ${denso ? 'denso' : ''}`}
+      aria-label="Estantería"
+    >
+      <div className="densidad">
+        <span>densidad</span>
+        <button
+          type="button"
+          className={!denso ? 'activo' : undefined}
+          aria-pressed={!denso}
+          onClick={() => setDenso(false)}
+        >
+          compacta
+        </button>
+        <button
+          type="button"
+          className={denso ? 'activo' : undefined}
+          aria-pressed={denso}
+          onClick={() => setDenso(true)}
+        >
+          ampliada
+        </button>
+      </div>
+
       <div className="pasillos" role="tablist" aria-label="Pasillos">
         {pasillos.map((numero) => (
           <button
@@ -70,6 +94,11 @@ export function Estanteria({ posiciones }) {
                 {BAHIAS.map((bahia) => {
                   const posicion = porCodigo.get(`${bahia}-${nivel}`)
                   const info = estado(posicion?.estado)
+                  const linea = posicion?.contenido?.[0]
+                  const reservada = (posicion?.contenido ?? []).reduce(
+                    (suma, l) => suma + l.reservada,
+                    0
+                  )
                   const seleccionada =
                     seleccion && posicion?.codigo === seleccion.codigo
                   return (
@@ -82,13 +111,29 @@ export function Estanteria({ posiciones }) {
                       }
                       aria-label={
                         posicion
-                          ? `${posicion.codigo}, ${info.etiqueta}`
+                          ? `${posicion.codigo}, ${info.etiqueta}${reservada > 0 ? `, ${reservada} reservado` : ''}`
                           : 'sin posición'
                       }
                       disabled={!posicion}
                       onClick={() => setSeleccion(posicion)}
                     >
-                      {info.simbolo}
+                      {denso && posicion ? (
+                        <span className="celda">
+                          <span className="celda-art">
+                            {linea?.codigo_articulo ?? ''}
+                          </span>
+                          <span className="celda-qty">
+                            {linea ? linea.disponible : ''}
+                          </span>
+                        </span>
+                      ) : (
+                        info.simbolo
+                      )}
+                      {reservada > 0 && (
+                        <span className="reservado-badge">
+                          R{denso ? ` ${reservada}` : ''}
+                        </span>
+                      )}
                     </button>
                   )
                 })}
