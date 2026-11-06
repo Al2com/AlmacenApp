@@ -7,6 +7,7 @@ import { Login } from './pages/login/Login'
 import { Ordenes } from './pages/ordenes/Ordenes'
 import { Panel } from './pages/panel/Panel'
 import { Pda } from './pages/pda/Pda'
+import { Recepciones } from './pages/recepciones/Recepciones'
 
 // La vista 3D arrastra Three.js: se carga solo al abrir el plano.
 const Plano = lazy(() =>
@@ -59,7 +60,7 @@ export function App() {
         path="/recepciones"
         element={
           <Privada roles={['admin', 'operador_recepcion']}>
-            <Placeholder titulo="Recepciones" />
+            <Recepciones />
           </Privada>
         }
       />
