@@ -6,6 +6,7 @@ use App\Http\Controllers\OrdenController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\PlanoController;
 use App\Http\Controllers\RecepcionController;
+use App\Http\Controllers\StockController;
 use App\Http\Controllers\TareaController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
@@ -55,5 +56,8 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
 
         // Plano del almacén para la vista 3D (admin, gestor, producción).
         Route::get('/plano/estanteria', [PlanoController::class, 'estanteria']);
+
+        // Consulta de stock y lotes (cualquier rol).
+        Route::get('/stock', [StockController::class, 'index']);
     });
 });

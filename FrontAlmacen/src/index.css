@@ -879,6 +879,24 @@ th {
   margin-top: 0.75rem;
 }
 
+/* --- Stock --- */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filtros select {
+  min-height: 44px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fff;
+}
+
 /* --- PDA (móvil, una mano) --- */
 .pda {
   max-width: 420px;

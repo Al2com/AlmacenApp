@@ -38,5 +38,8 @@ class AppServiceProvider extends ServiceProvider
 
         // El plano del almacén (2D y 3D) lo ven admin, gestor y producción (docs/frontend.md).
         Gate::define('ver-plano', fn (User $user): bool => in_array($user->rol, [Rol::Admin, Rol::GestorInventario, Rol::OperadorProduccion], true));
+
+        // El stock es de consulta para cualquier rol autenticado (docs/frontend.md).
+        Gate::define('ver-stock', fn (User $user): bool => true);
     }
 }

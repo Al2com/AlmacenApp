@@ -1,13 +1,13 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Privada } from './auth/Privada'
-import { Placeholder } from './components/Placeholder'
 import { CambiarPassword } from './pages/cambiar-password/CambiarPassword'
 import { Login } from './pages/login/Login'
 import { Ordenes } from './pages/ordenes/Ordenes'
 import { Panel } from './pages/panel/Panel'
 import { Pda } from './pages/pda/Pda'
 import { Recepciones } from './pages/recepciones/Recepciones'
+import { Stock } from './pages/stock/Stock'
 import { Usuarios } from './pages/usuarios/Usuarios'
 
 // La vista 3D arrastra Three.js: se carga solo al abrir el plano.
@@ -69,7 +69,7 @@ export function App() {
         path="/stock"
         element={
           <Privada roles={TODOS}>
-            <Placeholder titulo="Stock y lotes" />
+            <Stock />
           </Privada>
         }
       />

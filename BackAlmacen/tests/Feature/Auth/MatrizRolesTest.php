@@ -110,4 +110,12 @@ class MatrizRolesTest extends TestCase
 
         $this->actingAs($user)->getJson('/api/plano/estanteria')->assertStatus($vePlano ? 200 : 403);
     }
+
+    #[DataProvider('roles')]
+    public function test_el_stock_lo_consulta_cualquier_rol(Rol $rol, bool $gestionaUsuarios, bool $vePanel): void
+    {
+        $user = User::factory()->create(['rol' => $rol]);
+
+        $this->actingAs($user)->getJson('/api/stock')->assertOk();
+    }
 }
