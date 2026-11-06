@@ -1,75 +1,77 @@
 import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
-import * as THREE from 'three'
+import { VEL_BASE } from '../pages/plano/rutaOperario'
 
 const COLOR_OPERARIO = '#0e1b2e'
 const COLOR_CASCO = '#ff8a3d'
-const COLOR_CARRO = '#46546a'
+const COLOR_PALET = '#b07b3f'
+const COLOR_TRANSPALET = '#46546a'
 const COLOR_ESCALERA = '#9aa3ad'
+const COLOR_CAJA = '#c9a24b'
+
+// Avanza `actual` hacia `destino` a ritmo constante (unidades por fotograma).
+function avanzar(actual, destino, paso) {
+  const d = destino - actual
+  if (Math.abs(d) <= paso) return destino
+  return actual + Math.sign(d) * paso
+}
 
 /**
- * El operario virtual del modo demostración: una figura sencilla que camina
- * (interpolando cada fotograma hacia el objetivo de su fase actual) hacia la
- * posición de la tarea, sube a una escalera si el nivel lo pide, y vuelve al
- * carro de picking. Puramente visual: el cambio real de stock lo hace la API,
- * no esta animación.
+ * El operario virtual del modo demostración: una figura sencilla que empuja un
+ * transpalé con un palé. Se mueve siguiendo los puntos de ruta que marca el
+ * hook (por los pasillos, nunca a través de las estanterías) y las cajas que
+ * va cogiendo se apilan sobre el palé. Puramente visual: el cambio real de
+ * stock lo hace la API, no esta animación.
  */
-export function OperarioAnimado({ fase, destino, carro, visible }) {
+export function OperarioAnimado({
+  fase,
+  objetivo,
+  velocidad,
+  cargadas,
+  escalera,
+  inicio,
+}) {
   const grupo = useRef()
-  const objetivo = objetivoDe(fase, destino, carro)
+  const figura = useRef()
 
   useFrame((_, delta) => {
-    if (!grupo.current) return
-    const actual = grupo.current.position
-    const alfa = Math.min(1, delta * 2.5)
-    actual.x = THREE.MathUtils.lerp(actual.x, objetivo.x, alfa)
-    actual.y = THREE.MathUtils.lerp(actual.y, objetivo.y, alfa)
-    actual.z = THREE.MathUtils.lerp(actual.z, objetivo.z, alfa)
+    if (!grupo.current || !objetivo) return
+    const pos = grupo.current.position
+    const paso = VEL_BASE * velocidad * delta
+    pos.x = avanzar(pos.x, objetivo.x, paso)
+    pos.z = avanzar(pos.z, objetivo.z, paso)
+    if (figura.current) {
+      const subir = VEL_BASE * 0.7 * velocidad * delta
+      figura.current.position.y = avanzar(
+        figura.current.position.y,
+        objetivo.y,
+        subir
+      )
+    }
   })
 
   const enEscalera =
-    fase === 'subiendo' ||
-    fase === 'bajando' ||
-    (fase === 'cogiendo' && destino?.escalera)
+    escalera &&
+    (fase === 'subiendo' || fase === 'bajando' || fase === 'cogiendo')
 
   return (
     <>
-      <CarroPicking posicion={carro} />
-      {visible && (
-        <group ref={grupo} position={[carro.x, 0, carro.z]}>
+      <group ref={grupo} position={[inicio.x, 0, inicio.z]}>
+        <Transpalet cargadas={cargadas} />
+        <group ref={figura}>
           <Figura inclinado={fase === 'cogiendo'} />
         </group>
-      )}
-      {visible && enEscalera && destino && (
-        <Escalera x={destino.x} z={destino.z} altura={destino.yCaja} />
+      </group>
+      {enEscalera && (
+        <Escalera x={escalera.x} z={escalera.z} altura={escalera.altura} />
       )}
     </>
   )
 }
 
-function objetivoDe(fase, destino, carro) {
-  if (!destino) {
-    return { x: carro.x, y: 0, z: carro.z }
-  }
-  if (fase === 'yendo') return { x: destino.x, y: 0, z: destino.z }
-  if (fase === 'subiendo')
-    return { x: destino.x, y: destino.yCaja, z: destino.z }
-  if (fase === 'cogiendo') {
-    return {
-      x: destino.x,
-      y: destino.escalera ? destino.yCaja : 0,
-      z: destino.z,
-    }
-  }
-  if (fase === 'bajando') return { x: destino.x, y: 0, z: destino.z }
-  if (fase === 'volviendo') return { x: carro.x, y: 0, z: carro.z }
-
-  return { x: carro.x, y: 0, z: carro.z }
-}
-
 function Figura({ inclinado }) {
   return (
-    <group rotation={[inclinado ? 0.3 : 0, 0, 0]}>
+    <group position={[0, 0, 0.15]} rotation={[inclinado ? 0.3 : 0, 0, 0]}>
       <mesh position={[0, 0.55, 0]}>
         <capsuleGeometry args={[0.18, 0.5, 4, 8]} />
         <meshStandardMaterial color={COLOR_OPERARIO} />
@@ -82,6 +84,32 @@ function Figura({ inclinado }) {
   )
 }
 
+/**
+ * Transpalé con su palé, detrás del operario. Las cajas cargadas se apilan
+ * encima (se topa la pila para no formar una torre infinita).
+ */
+function Transpalet({ cargadas }) {
+  const pila = Math.min(cargadas, 5)
+  return (
+    <group position={[0, 0, -0.55]}>
+      <mesh position={[0, 0.1, 0]}>
+        <boxGeometry args={[0.7, 0.14, 0.9]} />
+        <meshStandardMaterial color={COLOR_PALET} />
+      </mesh>
+      <mesh position={[0, 0.45, -0.5]}>
+        <boxGeometry args={[0.55, 0.9, 0.06]} />
+        <meshStandardMaterial color={COLOR_TRANSPALET} />
+      </mesh>
+      {Array.from({ length: pila }, (_, i) => i).map((i) => (
+        <mesh key={i} position={[0, 0.32 + i * 0.26, 0]}>
+          <boxGeometry args={[0.5, 0.24, 0.6]} />
+          <meshStandardMaterial color={COLOR_CAJA} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
 function Escalera({ x, z, altura }) {
   return (
     <group position={[x, 0, z + 0.35]}>
@@ -89,32 +117,6 @@ function Escalera({ x, z, altura }) {
         <boxGeometry args={[0.45, altura, 0.06]} />
         <meshStandardMaterial color={COLOR_ESCALERA} wireframe />
       </mesh>
-    </group>
-  )
-}
-
-function CarroPicking({ posicion }) {
-  return (
-    <group position={[posicion.x, 0, posicion.z]}>
-      <mesh position={[0, 0.3, 0]}>
-        <boxGeometry args={[0.7, 0.5, 0.5]} />
-        <meshStandardMaterial color={COLOR_CARRO} />
-      </mesh>
-      {[
-        [-0.3, -0.2],
-        [0.3, -0.2],
-        [-0.3, 0.2],
-        [0.3, 0.2],
-      ].map(([dx, dz]) => (
-        <mesh
-          key={`${dx}-${dz}`}
-          position={[dx, 0.08, dz]}
-          rotation={[Math.PI / 2, 0, 0]}
-        >
-          <cylinderGeometry args={[0.08, 0.08, 0.05, 10]} />
-          <meshStandardMaterial color="#1b2d5e" />
-        </mesh>
-      ))}
     </group>
   )
 }

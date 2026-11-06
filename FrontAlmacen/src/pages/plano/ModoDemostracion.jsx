@@ -1,11 +1,11 @@
 const ETIQUETA_FASE = {
   parado: 'en espera',
-  yendo: 'caminando a la posición',
+  andando: 'caminando por el pasillo',
   subiendo: 'subiendo a la escalera',
   cogiendo: 'cogiendo la caja',
   bajando: 'bajando de la escalera',
-  volviendo: 'volviendo al carro',
-  dejando: 'dejando la caja en el carro',
+  cargando: 'cargando la caja en el transpalé',
+  descargando: 'dejando el palé en producción',
   terminado: 'terminado',
 }
 
@@ -70,7 +70,7 @@ export function ModoDemostracion({ demo }) {
             className="boton boton-secundario"
             onClick={reiniciar}
           >
-            reiniciar paso
+            reiniciar recorrido
           </button>
         </div>
       )}

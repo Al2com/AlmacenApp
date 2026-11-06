@@ -1,32 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as demoApi from '../../api/demostracion'
-import {
-  ALMACEN,
-  CENTRO_BAHIA,
-  PASO_PASILLO,
-  PROF_RACK,
-  necesitaEscalera,
-} from '../../config/almacen'
+import { VEL_BASE, X_CARRIL, destinoDeTarea, rutaEntre } from './rutaOperario'
 
-const SX = ALMACEN.anchoBahia
-const SY = ALMACEN.alturaNivel
-
-// Duraciones base (ms) de cada fase caminada, antes de aplicar la velocidad.
-// Se pausa solo entre fases (no a mitad de una), para no complicar el reloj.
+// Duraciones base (ms) de las fases quietas (las caminadas se calculan según la
+// distancia). Se ajustan luego por la velocidad elegida.
 const DURACION = {
-  yendo: 1800,
   subiendo: 900,
-  cogiendo: 700,
-  bajando: 900,
-  volviendo: 1800,
-  dejando: 500,
+  cogiendo: 650,
+  bajando: 800,
+  cargando: 450,
+  descargando: 1000,
+}
+
+// El operario entra por el carril, cerca de recepción.
+const INICIO = { x: X_CARRIL, z: -2 }
+
+function distancia(a, b) {
+  return Math.hypot(a.x - b.x, a.z - b.z)
 }
 
 /**
- * Orquesta al operario virtual: pide la siguiente tarea real, la «camina» (o
- * no, si se respeta prefers-reduced-motion) y confirma con la API real en el
- * momento exacto de dejar la caja en el carro. Nunca toca el stock por su
- * cuenta: todo el cambio pasa por ConfirmarTarea en el backend.
+ * Orquesta al operario virtual: pide la siguiente tarea real, lo lleva por los
+ * pasillos (nunca a través de las estanterías) empujando un transpalé, carga la
+ * caja encima y confirma con la API real en ese momento. Acumula las cajas en
+ * el transpalé y solo baja a producción una vez, al terminar. Nunca toca el
+ * stock por su cuenta: todo el cambio pasa por ConfirmarTarea en el backend.
  */
 export function useOperarioVirtual({
   posiciones,
@@ -40,39 +38,24 @@ export function useOperarioVirtual({
   const [velocidad, setVelocidad] = useState(1)
   const [fase, setFase] = useState('parado')
   const [tarea, setTarea] = useState(null)
+  const [objetivo, setObjetivo] = useState({ x: INICIO.x, y: 0, z: INICIO.z })
+  const [escalera, setEscalera] = useState(null)
+  const [cargadas, setCargadas] = useState(0)
   const [mensaje, setMensaje] = useState('')
+  const [corrida, setCorrida] = useState(0)
 
+  const corridaRef = useRef(0)
   const pausadaRef = useRef(pausada)
+  const velocidadRef = useRef(velocidad)
   useEffect(() => {
     pausadaRef.current = pausada
   }, [pausada])
-  const corridaRef = useRef(0)
+  useEffect(() => {
+    velocidadRef.current = velocidad
+  }, [velocidad])
 
-  const carro = { x: 0, z: zCamara + 1.8 }
-
-  const destinoDeTarea = useCallback(
-    (t) => {
-      if (!t) return null
-      const posicion = posiciones.find((p) => p.codigo === t.ubicacion)
-      const yCaja = (t.nivel - 1) * SY
-
-      if (posicion?.refrigerado) {
-        return { x: 0, z: zCamara, yCaja, escalera: false }
-      }
-
-      const indice = pasillos.indexOf(t.pasillo)
-      return {
-        x: (t.estanteria - CENTRO_BAHIA) * SX,
-        z: indice * PASO_PASILLO + PROF_RACK + 0.7,
-        yCaja,
-        escalera: necesitaEscalera(t.nivel),
-      }
-    },
-    [posiciones, pasillos, zCamara]
-  )
-
-  // Espera `ms` (ajustados por velocidad); si está en pausa al cumplirse el
-  // plazo, no pasa de fase hasta que se reanude.
+  // Espera `ms`; si está en pausa al cumplirse el plazo, no pasa de fase hasta
+  // que se reanude.
   const esperar = useCallback((ms) => {
     return new Promise((resolve) => {
       const comprobar = () => {
@@ -88,72 +71,121 @@ export function useOperarioVirtual({
 
   const ciclo = useCallback(
     async (miCorrida) => {
+      const pos = { x: INICIO.x, z: INICIO.z }
+      let llevadas = 0
+
+      const vivo = () => miCorrida === corridaRef.current
+
+      const andarHasta = async (destino) => {
+        for (const punto of rutaEntre(pos, destino)) {
+          setFase('andando')
+          setObjetivo({ x: punto.x, y: 0, z: punto.z })
+          await esperar(
+            (distancia(pos, punto) / VEL_BASE / velocidadRef.current) * 1000
+          )
+          if (!vivo()) return false
+          pos.x = punto.x
+          pos.z = punto.z
+        }
+        return true
+      }
+
       const inicial = await demoApi.estado()
+      if (!vivo()) return
       let actual = inicial.tarea
       let pendientes = inicial.pendientes
 
-      while (actual && miCorrida === corridaRef.current) {
+      while (actual && vivo()) {
         setTarea(actual)
-        const destino = destinoDeTarea(actual)
+        const destino = destinoDeTarea(actual, posiciones, pasillos, zCamara)
 
         if (!reducida) {
-          setFase('yendo')
-          await esperar(DURACION.yendo / velocidad)
-          if (miCorrida !== corridaRef.current) return
+          if (!(await andarHasta(destino))) return
 
           if (destino.escalera) {
+            setEscalera({ x: destino.x, z: destino.z, altura: destino.yCaja })
             setFase('subiendo')
-            await esperar(DURACION.subiendo / velocidad)
-            if (miCorrida !== corridaRef.current) return
+            setObjetivo({ x: destino.x, y: destino.yCaja, z: destino.z })
+            await esperar(DURACION.subiendo / velocidadRef.current)
+            if (!vivo()) return
           }
 
           setFase('cogiendo')
-          await esperar(DURACION.cogiendo / velocidad)
-          if (miCorrida !== corridaRef.current) return
+          setObjetivo({
+            x: destino.x,
+            y: destino.escalera ? destino.yCaja : 0,
+            z: destino.z,
+          })
+          await esperar(DURACION.cogiendo / velocidadRef.current)
+          if (!vivo()) return
 
           if (destino.escalera) {
             setFase('bajando')
-            await esperar(DURACION.bajando / velocidad)
-            if (miCorrida !== corridaRef.current) return
+            setObjetivo({ x: destino.x, y: 0, z: destino.z })
+            await esperar(DURACION.bajando / velocidadRef.current)
+            if (!vivo()) return
           }
-
-          setFase('volviendo')
-          await esperar(DURACION.volviendo / velocidad)
-          if (miCorrida !== corridaRef.current) return
+          setEscalera(null)
         }
 
-        setFase('dejando')
-        // Momento exacto del cambio de estado: se confirma aquí, nunca antes.
+        // Momento exacto del cambio de estado: se confirma al cargar la caja en
+        // el transpalé, nunca antes.
+        setFase('cargando')
         const resultado = await demoApi.confirmar()
+        if (!vivo()) return
+        llevadas += 1
+        setCargadas(llevadas)
         onConfirmado()
-        if (miCorrida !== corridaRef.current) return
+        await esperar(
+          (reducida ? 450 : DURACION.cargando) / velocidadRef.current
+        )
+        if (!vivo()) return
 
-        // En modo sin movimiento no hay paseo, pero se deja una pausa breve
-        // para que se note cada cambio, en vez de confirmarlo todo de golpe.
-        await esperar((reducida ? 500 : DURACION.dejando) / velocidad)
-        if (miCorrida !== corridaRef.current) return
-
+        pos.x = destino.x
+        pos.z = destino.z
         actual = resultado.siguiente
         pendientes = resultado.pendientes
       }
 
-      if (miCorrida === corridaRef.current) {
-        setFase('terminado')
+      if (!vivo()) return
+
+      // Al terminar, un único viaje a producción a dejar el palé cargado.
+      if (llevadas > 0 && !reducida) {
         setTarea(null)
-        setMensaje(pendientes === 0 ? 'No quedan tareas pendientes.' : '')
-        setActiva(false)
+        if (!(await andarHasta({ x: 0, z: zCamara + 2.4 }))) return
+        setFase('descargando')
+        await esperar(DURACION.descargando / velocidadRef.current)
+        if (!vivo()) return
+        setCargadas(0)
       }
+
+      setFase('terminado')
+      setTarea(null)
+      setEscalera(null)
+      setMensaje(
+        pendientes === 0 ? 'Pedido preparado: no quedan tareas pendientes.' : ''
+      )
+      setActiva(false)
     },
-    [destinoDeTarea, velocidad, reducida, onConfirmado, esperar]
+    [posiciones, pasillos, zCamara, reducida, onConfirmado, esperar]
   )
 
-  const iniciar = useCallback(() => {
-    corridaRef.current += 1
-    setActiva(true)
-    setPausada(false)
-    setMensaje('')
-    ciclo(corridaRef.current)
-  }, [ciclo])
+  const arrancar = useCallback(
+    (mensajeInicial) => {
+      corridaRef.current += 1
+      setCorrida(corridaRef.current)
+      setActiva(true)
+      setPausada(false)
+      setMensaje(mensajeInicial)
+      setCargadas(0)
+      setEscalera(null)
+      ciclo(corridaRef.current)
+    },
+    [ciclo]
+  )
+
+  const iniciar = useCallback(() => arrancar(''), [arrancar])
+  const reiniciar = useCallback(() => arrancar(''), [arrancar])
 
   const detener = useCallback(() => {
     corridaRef.current += 1
@@ -161,15 +193,8 @@ export function useOperarioVirtual({
     setPausada(false)
     setFase('parado')
     setTarea(null)
+    setEscalera(null)
   }, [])
-
-  const reiniciar = useCallback(() => {
-    corridaRef.current += 1
-    setPausada(false)
-    setActiva(true)
-    setMensaje('')
-    ciclo(corridaRef.current)
-  }, [ciclo])
 
   const alternarPausa = useCallback(() => setPausada((p) => !p), [])
 
@@ -193,8 +218,11 @@ export function useOperarioVirtual({
     fase,
     tarea,
     mensaje,
-    destino: destinoDeTarea(tarea),
-    carro,
+    objetivo,
+    escalera,
+    cargadas,
+    corrida,
+    inicio: INICIO,
     iniciar,
     detener,
     reiniciar,

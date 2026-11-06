@@ -177,12 +177,15 @@ export function Plano() {
             foco={foco}
             onSeleccion={setSeleccion}
           />
-          {esAdmin && (
+          {esAdmin && demo.activa && !reducida && (
             <OperarioAnimado
+              key={demo.corrida}
               fase={demo.fase}
-              destino={demo.destino}
-              carro={demo.carro}
-              visible={demo.activa && !reducida}
+              objetivo={demo.objetivo}
+              velocidad={demo.velocidad}
+              cargadas={demo.cargadas}
+              escalera={demo.escalera}
+              inicio={demo.inicio}
             />
           )}
           <ControlCamara foco={foco} pasillos={pasillos} />
