@@ -7,11 +7,9 @@ use App\Enums\EstadoTarea;
 use App\Models\Articulo;
 use App\Models\OrdenLinea;
 use App\Models\OrdenProduccion;
-use App\Models\Stock;
 use App\Models\TareaPicking;
 use App\Models\Ubicacion;
 use App\Models\User;
-use App\Support\FechaSimulada;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -34,6 +32,7 @@ class LanzarOrden
                 'user_id' => $usuario->id,
             ]);
 
+            $reserva = new ReservaDeStock;
             $reservas = [];
             foreach ($lineas as $linea) {
                 $ordenLinea = OrdenLinea::create([
@@ -43,8 +42,10 @@ class LanzarOrden
                     'cantidad_preparada' => 0,
                 ]);
 
-                foreach ($this->reservarFefo($ordenLinea, $linea['articulo'], $linea['cantidad']) as $reserva) {
-                    $reservas[] = $reserva;
+                // Reserva por FEFO los lotes del artículo; cada tramo reservado
+                // se convierte en una tarea de picking.
+                foreach ($reserva->reservar($linea['articulo'], $linea['cantidad'])['tramos'] as $tramo) {
+                    $reservas[] = ['orden_linea_id' => $ordenLinea->id] + $tramo;
                 }
             }
 
@@ -52,60 +53,6 @@ class LanzarOrden
 
             return $orden;
         });
-    }
-
-    /**
-     * Reserva por FEFO el material disponible del artículo y devuelve los
-     * tramos reservados (lote + ubicación + cantidad). No reserva caducados ni
-     * más de lo disponible; si falta, devuelve menos de lo pedido.
-     *
-     * @return list<array{orden_linea_id: int, lote_id: int, ubicacion_id: int, cantidad: float}>
-     */
-    private function reservarFefo(OrdenLinea $ordenLinea, Articulo $articulo, float $cantidad): array
-    {
-        $hoy = FechaSimulada::hoy()->toDateString();
-
-        $disponibles = Stock::query()
-            ->select('stock.*')
-            ->join('lotes', 'lotes.id', '=', 'stock.lote_id')
-            ->where('lotes.articulo_id', $articulo->id)
-            ->whereRaw('stock.cantidad - stock.cantidad_reservada > 0')
-            ->where(function ($q) use ($hoy) {
-                $q->whereNull('lotes.caducidad')->orWhere('lotes.caducidad', '>=', $hoy);
-            })
-            ->orderByRaw('lotes.caducidad is null')
-            ->orderBy('lotes.caducidad')
-            ->orderBy('lotes.fecha_recepcion')
-            ->lockForUpdate()
-            ->get();
-
-        $reservas = [];
-        $pendiente = $cantidad;
-
-        foreach ($disponibles as $fila) {
-            if ($pendiente <= 0) {
-                break;
-            }
-
-            $libre = (float) $fila->cantidad - (float) $fila->cantidad_reservada;
-            $reservar = min($pendiente, $libre);
-
-            Stock::query()
-                ->where('lote_id', $fila->lote_id)
-                ->where('ubicacion_id', $fila->ubicacion_id)
-                ->update(['cantidad_reservada' => (float) $fila->cantidad_reservada + $reservar]);
-
-            $reservas[] = [
-                'orden_linea_id' => $ordenLinea->id,
-                'lote_id' => $fila->lote_id,
-                'ubicacion_id' => $fila->ubicacion_id,
-                'cantidad' => $reservar,
-            ];
-
-            $pendiente -= $reservar;
-        }
-
-        return $reservas;
     }
 
     /**
