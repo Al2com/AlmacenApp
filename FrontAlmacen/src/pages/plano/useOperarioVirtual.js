@@ -20,17 +20,16 @@ function distancia(a, b) {
 }
 
 /**
- * Orquesta al operario virtual: pide la siguiente tarea real, lo lleva por los
- * pasillos (nunca a través de las estanterías) empujando un transpalé, carga la
- * caja encima y confirma con la API real en ese momento. Acumula las cajas en
- * el transpalé y solo baja a producción una vez, al terminar. Nunca toca el
- * stock por su cuenta: todo el cambio pasa por ConfirmarTarea en el backend.
+ * Orquesta al operario virtual para recrear la ruta de picking del último
+ * pedido lanzado (la pide una vez a la API). Lo lleva por los pasillos (nunca a
+ * través de las estanterías) empujando un transpalé, y al llegar a cada caja la
+ * marca como recogida. No confirma ni consume stock: es una recreación visual
+ * de la ruta, repetible las veces que haga falta.
  */
 export function useOperarioVirtual({
   posiciones,
   pasillos,
   zCamara,
-  onConfirmado,
   reducida,
 }) {
   const [activa, setActiva] = useState(false)
@@ -41,6 +40,7 @@ export function useOperarioVirtual({
   const [objetivo, setObjetivo] = useState({ x: INICIO.x, y: 0, z: INICIO.z })
   const [escalera, setEscalera] = useState(null)
   const [cargadas, setCargadas] = useState(0)
+  const [visitadas, setVisitadas] = useState([])
   const [mensaje, setMensaje] = useState('')
   const [corrida, setCorrida] = useState(0)
 
@@ -90,14 +90,26 @@ export function useOperarioVirtual({
         return true
       }
 
-      const inicial = await demoApi.estado()
+      const datos = await demoApi.ruta()
       if (!vivo()) return
-      let actual = inicial.tarea
-      let pendientes = inicial.pendientes
+      const tareas = datos.tareas ?? []
 
-      while (actual && vivo()) {
-        setTarea(actual)
-        const destino = destinoDeTarea(actual, posiciones, pasillos, zCamara)
+      if (tareas.length === 0) {
+        setFase('terminado')
+        setTarea(null)
+        setMensaje(
+          datos.orden
+            ? 'El pedido no tiene tareas de picking que recorrer.'
+            : 'No hay ningún pedido. Crea uno en «órdenes» y vuelve a iniciar.'
+        )
+        setActiva(false)
+        return
+      }
+
+      for (const t of tareas) {
+        if (!vivo()) return
+        setTarea(t)
+        const destino = destinoDeTarea(t, posiciones, pasillos, zCamara)
 
         if (!reducida) {
           if (!(await andarHasta(destino))) return
@@ -128,14 +140,14 @@ export function useOperarioVirtual({
           setEscalera(null)
         }
 
-        // Momento exacto del cambio de estado: se confirma al cargar la caja en
-        // el transpalé, nunca antes.
+        // Al llegar, se marca la caja como recogida (no se confirma ni se
+        // consume stock): la posición queda visible como recogida en el plano.
         setFase('cargando')
-        const resultado = await demoApi.confirmar()
-        if (!vivo()) return
         llevadas += 1
         setCargadas(llevadas)
-        onConfirmado()
+        setVisitadas((prev) =>
+          prev.includes(t.ubicacion) ? prev : [...prev, t.ubicacion]
+        )
         await esperar(
           (reducida ? 450 : DURACION.cargando) / velocidadRef.current
         )
@@ -143,8 +155,6 @@ export function useOperarioVirtual({
 
         pos.x = destino.x
         pos.z = destino.z
-        actual = resultado.siguiente
-        pendientes = resultado.pendientes
       }
 
       if (!vivo()) return
@@ -162,30 +172,26 @@ export function useOperarioVirtual({
       setFase('terminado')
       setTarea(null)
       setEscalera(null)
-      setMensaje(
-        pendientes === 0 ? 'Pedido preparado: no quedan tareas pendientes.' : ''
-      )
+      setMensaje('Ruta recorrida. Pulsa «reiniciar recorrido» para repetirla.')
       setActiva(false)
     },
-    [posiciones, pasillos, zCamara, reducida, onConfirmado, esperar]
+    [posiciones, pasillos, zCamara, reducida, esperar]
   )
 
-  const arrancar = useCallback(
-    (mensajeInicial) => {
-      corridaRef.current += 1
-      setCorrida(corridaRef.current)
-      setActiva(true)
-      setPausada(false)
-      setMensaje(mensajeInicial)
-      setCargadas(0)
-      setEscalera(null)
-      ciclo(corridaRef.current)
-    },
-    [ciclo]
-  )
+  const arrancar = useCallback(() => {
+    corridaRef.current += 1
+    setCorrida(corridaRef.current)
+    setActiva(true)
+    setPausada(false)
+    setMensaje('')
+    setCargadas(0)
+    setVisitadas([])
+    setEscalera(null)
+    ciclo(corridaRef.current)
+  }, [ciclo])
 
-  const iniciar = useCallback(() => arrancar(''), [arrancar])
-  const reiniciar = useCallback(() => arrancar(''), [arrancar])
+  const iniciar = arrancar
+  const reiniciar = arrancar
 
   const detener = useCallback(() => {
     corridaRef.current += 1
@@ -194,6 +200,7 @@ export function useOperarioVirtual({
     setFase('parado')
     setTarea(null)
     setEscalera(null)
+    setVisitadas([])
   }, [])
 
   const alternarPausa = useCallback(() => setPausada((p) => !p), [])
@@ -221,6 +228,7 @@ export function useOperarioVirtual({
     objetivo,
     escalera,
     cargadas,
+    visitadas,
     corrida,
     inicio: INICIO,
     iniciar,

@@ -1,6 +1,6 @@
 import { OrbitControls, Stats } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { actividad } from '../../api/panel'
 import { estanteria as cargarEstanteria } from '../../api/plano'
 import { useSesion } from '../../auth/contexto'
@@ -31,17 +31,6 @@ export function Plano() {
   const [resaltada, setResaltada] = useState(null)
   const [seguir, setSeguir] = useState(false)
   const posOperario = useRef(null)
-
-  // Refresco silencioso (lo usa también el modo demostración tras confirmar
-  // una tarea, para ver la caja cambiar al momento sin esperar al sondeo).
-  const cargar = useCallback(async () => {
-    try {
-      const datos = await cargarEstanteria()
-      setPosiciones(datos)
-    } catch {
-      // Un fallo puntual aquí no es grave: se reintenta en el siguiente sondeo.
-    }
-  }, [])
 
   useEffect(() => {
     let activo = true
@@ -137,7 +126,6 @@ export function Plano() {
     pasillos,
     zCamara,
     reducida,
-    onConfirmado: cargar,
   })
 
   if (error) {
@@ -200,6 +188,7 @@ export function Plano() {
             seleccion={seleccion}
             resaltada={resaltada}
             foco={foco}
+            visitadas={demo.visitadas}
             onSeleccion={setSeleccion}
           />
           {esAdmin && demo.activa && !reducida && (

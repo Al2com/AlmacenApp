@@ -36,8 +36,14 @@ export function Estanteria3D({
   seleccion,
   resaltada,
   foco,
+  visitadas = [],
   onSeleccion,
 }) {
+  const recogidas = new Set(visitadas)
+  // Las posiciones que ya ha recorrido el operario en la demostración se pintan
+  // como recogidas (no desaparecen: no se consume stock).
+  const estadoDe = (p) => (recogidas.has(p.codigo) ? 'recogida' : p.estado)
+
   const normales = posiciones.filter((p) => !p.refrigerado)
   const refrigeradas = posiciones.filter((p) => p.refrigerado)
   const pasillos = [...new Set(normales.map((p) => p.pasillo))].sort(
@@ -45,19 +51,19 @@ export function Estanteria3D({
   )
   const zCamara = pasillos.length * PASO_PASILLO + 1.5
   const camara = refrigeradas.length
-    ? construirCamara(refrigeradas, zCamara)
+    ? construirCamara(refrigeradas, zCamara, estadoDe)
     : null
 
   const cajas = []
   pasillos.forEach((numero, indice) => {
     const z = indice * PASO_PASILLO
     normales
-      .filter((p) => p.pasillo === numero && p.estado !== 'libre')
+      .filter((p) => p.pasillo === numero && estadoDe(p) !== 'libre')
       .forEach((p) => {
         cajas.push({
           posicion: p,
           pos: [(p.estanteria - CENTRO_BAHIA) * SX, (p.nivel - 1) * SY, z],
-          color: estado(p.estado).color,
+          color: estado(estadoDe(p)).color,
         })
       })
   })
@@ -128,7 +134,7 @@ function Cajas({ cajas, seleccion, resaltada, onSeleccion }) {
   )
 }
 
-function construirCamara(refrigeradas, zCamara) {
+function construirCamara(refrigeradas, zCamara, estadoDe) {
   const ests = refrigeradas.map((p) => p.estanteria)
   const minE = Math.min(...ests)
   const maxE = Math.max(...ests)
@@ -138,11 +144,11 @@ function construirCamara(refrigeradas, zCamara) {
   const ancho = celdas * SX
 
   const cajas = refrigeradas
-    .filter((p) => p.estado !== 'libre')
+    .filter((p) => estadoDe(p) !== 'libre')
     .map((p) => ({
       posicion: p,
       pos: [(p.estanteria - centroE) * SX, (p.nivel - 1) * SY, zCamara],
-      color: estado(p.estado).color,
+      color: estado(estadoDe(p)).color,
     }))
 
   return {

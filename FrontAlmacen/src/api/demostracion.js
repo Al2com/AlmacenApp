@@ -1,5 +1,4 @@
 import { api } from './cliente'
 
-export const estado = () => api.get('/demostracion/estado')
-
-export const confirmar = () => api.post('/demostracion/confirmar')
+// La ruta de picking del último pedido lanzado, para recrearla en el plano.
+export const ruta = () => api.get('/demostracion/ruta')
