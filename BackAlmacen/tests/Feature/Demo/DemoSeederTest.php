@@ -4,10 +4,7 @@ namespace Tests\Feature\Demo;
 
 use App\Models\Articulo;
 use App\Models\Movimiento;
-use App\Models\OrdenLinea;
-use App\Models\OrdenProduccion;
 use App\Models\Stock;
-use App\Models\TareaPicking;
 use App\Models\Ubicacion;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -80,8 +77,7 @@ class DemoSeederTest extends TestCase
 
         // El seeder solo recibe material (no consume ni da de baja): todo lo
         // que hay en stock viene explicado por una recepción, nada aparece de
-        // la nada. El pedido de la demo reserva, pero una reserva no es un
-        // movimiento y no cambia la cantidad total.
+        // la nada.
         $totalStock = (float) Stock::sum('cantidad');
         $totalRecepciones = (float) Movimiento::where('tipo', 'recepcion')->sum('cantidad');
 
@@ -98,26 +94,15 @@ class DemoSeederTest extends TestCase
         (new DemoSeeder)->run();
 
         $this->assertDatabaseHas('articulos', ['codigo' => 'DEMO-001']);
-        $this->assertDatabaseHas('ordenes_produccion', ['codigo' => 'OP-DEMO-GRANDE']);
+        $this->assertDatabaseHas('articulos', ['codigo' => 'DEMO-025']);
     }
 
-    public function test_deja_un_pedido_largo_con_preparacion_parcial(): void
+    public function test_no_lanza_ningun_pedido(): void
     {
+        // El pedido ya no lo crea el seeder: la demostración recrea la ruta del
+        // que cree el usuario. El almacén se siembra lleno pero sin órdenes.
         (new DemoSeeder)->run();
 
-        $orden = OrdenProduccion::query()->latest()->firstOrFail();
-        $lineas = OrdenLinea::where('orden_id', $orden->id)->count();
-
-        $this->assertGreaterThanOrEqual(25, $lineas);
-        $this->assertLessThanOrEqual(40, $lineas);
-
-        // Al menos una línea no consigue reservar toda la cantidad pedida
-        // (preparación parcial): lo reservado en sus tareas queda por debajo
-        // de lo solicitado.
-        $haySinServir = OrdenLinea::where('orden_id', $orden->id)
-            ->get()
-            ->contains(fn (OrdenLinea $linea) => (float) TareaPicking::where('orden_linea_id', $linea->id)->sum('cantidad') < (float) $linea->cantidad_solicitada);
-
-        $this->assertTrue($haySinServir);
+        $this->assertDatabaseCount('ordenes_produccion', 0);
     }
 }
