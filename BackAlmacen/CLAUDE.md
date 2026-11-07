@@ -33,7 +33,7 @@ Desde `BackAlmacen/`. Requiere MySQL en marcha (`docker compose up -d db` desde 
 - Arrancar el servidor: `php artisan serve` (http://127.0.0.1:8000)
 - Migrar: `php artisan migrate` · recrear desde cero: `php artisan migrate:fresh`
 - Crear el primer administrador (pide la contraseña por consola): `php artisan almacen:crear-admin`
-- Llenar el almacén con datos de demostración (solo local, se niega en producción): `php artisan almacen:demo` (añade `--fresh` para recrear la base limpia antes). No crea pedidos: los creas tú y el plano recrea su ruta.
+- Llenar el almacén con datos de demostración (solo local, se niega en producción): `php artisan almacen:demo` (añade `--fresh` para recrear la base limpia antes). Deja el almacén lleno y el pedido `OP-DEMO-GRANDE` lanzado para simular; puedes crear y borrar más pedidos.
 - Tests (sobre MySQL, base `almacen_test`): `php artisan test`
 - Formato de código (Pint): `./vendor/bin/pint` · solo comprobar: `./vendor/bin/pint --test`
 - Análisis estático (Larastan): `./vendor/bin/phpstan analyse`

@@ -70,15 +70,17 @@ El detalle del orden está en `docs/plan.md`.
 
 ## Datos de demostración
 
-`php artisan almacen:demo` llena el almacén para enseñar la aplicación en marcha: 25 artículos y el 85-90 % de las posiciones ocupadas (lotes con fechas variadas: la mayoría en buen estado, algunos que caducan en menos de 7 días y un par ya caducados). **No lanza ningún pedido**: la demostración recrea la ruta del pedido que cree el usuario. Es determinista (sin Faker ni azar): siempre deja el mismo resultado. **Se niega a ejecutarse si `APP_ENV=production`.**
+`php artisan almacen:demo` llena el almacén para enseñar la aplicación en marcha: 25 artículos, el 85-90 % de las posiciones ocupadas (lotes con fechas variadas: la mayoría en buen estado, algunos que caducan en menos de 7 días y un par ya caducados) y un pedido **`OP-DEMO-GRANDE`** ya lanzado, listo para simular su ruta. Es determinista (sin Faker ni azar): siempre deja el mismo resultado. Con `--fresh` recrea la base antes de sembrar. **Se niega a ejecutarse si `APP_ENV=production`.**
+
+El flujo real del almacén sigue su curso: se pueden crear más pedidos, lanzarlos (reservan stock y generan picking), borrarlos y hacer el picking de verdad por la PDA. Un pedido solo se puede **borrar** antes de empezar el picking (lanzada) o si está cancelada; en picking, preparada o entregada no, porque tiene movimientos inmutables.
 
 ### Modo demostración (operario virtual)
 
-Desde el plano 3D, el admin puede poner en marcha un **operario virtual** que recrea la **ruta de picking del último pedido lanzado** (el que acaba de crear en «órdenes»), recorriéndola tarea a tarea en orden de ruta. Es una **recreación visual, no un picking real**: no confirma nada ni consume stock, así que se puede repetir las veces que haga falta y las cajas recogidas no desaparecen (quedan marcadas como recogidas en el plano).
+Desde el plano 3D, el admin puede poner en marcha un **operario virtual** que recrea la **ruta de picking de la orden que esté lanzada** (`OP-DEMO-GRANDE` o la última que haya lanzado el usuario), recorriéndola tarea a tarea en orden de ruta. Es una **recreación visual, no un picking real**: no confirma nada ni consume stock, así que se puede repetir las veces que haga falta y las cajas recogidas no desaparecen (quedan marcadas como recogidas en el plano). Sirve para ver el recorrido **antes** de picar, por eso solo mira las órdenes lanzadas (no las que ya están en picking).
 
-- El endpoint `GET /api/demostracion/ruta` (servicio `RutaDemostracion`) solo lee: devuelve la última orden activa y sus tareas en orden de ruta. Está detrás de la policy de admin y del mismo cierre de producción (gate `usar-demostracion`).
+- El endpoint `GET /api/demostracion/ruta` (servicio `RutaDemostracion`) solo lee: devuelve la última orden lanzada y sus tareas en orden de ruta. Está detrás de la policy de admin y del mismo cierre de producción (gate `usar-demostracion`).
 - El front decide la ruta a pie y el ritmo (caminar por los pasillos, escalera, pausar, acelerar, seguir con la cámara...) a partir de esas tareas. Al no confirmar nada, la animación no puede tocar el stock.
-- Si no hay ningún pedido activo, la demostración lo avisa en vez de recorrer nada.
+- Si no hay ninguna orden lanzada, la demostración lo avisa en vez de recorrer nada.
 
 ## Límites conocidos
 
