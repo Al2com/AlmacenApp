@@ -102,7 +102,7 @@ Fase final. Recreación con Three.js del almacén, con los **mismos datos, estad
 - **Suelo con marcas**: una franja pintada a lo largo de cada calle de paso, y dos zonas señaladas en los extremos, **recepción** (azul, entrada de material) y **producción** (naranja, salida hacia fabricación). Una línea translúcida marca la **altura alcanzable sin escalera** (medida del archivo de configuración); por encima, una posición necesita escalera.
 - **Pasillos anchos y a escala creíble.** Todas las medidas —ancho de pasillo, fondo y ancho de estantería, altura de nivel, bahías por estantería, altura alcanzable sin escalera— viven en un **único archivo de configuración compartido** entre la vista 2D y la 3D, y se pueden cambiar sin tocar los componentes.
 - **Cámara orbital** con zoom, iluminación sencilla (ambiente + hemisférica + una direccional) y un **botón para centrar en un pasillo**.
-- **Rendimiento**: las cajas se dibujan con instancias (`InstancedMesh` vía `<Instances>` de drei), un único lote de dibujo para todas; con el almacén lleno (unas cien posiciones) va fluido en cualquier GPU modesta. En desarrollo se muestra un panel de fotogramas (`<Stats />`, solo fuera de producción) para comprobarlo en el propio navegador.
+- **Rendimiento**: las cajas se dibujan con instancias (`InstancedMesh` vía `<Instances>` de drei), un único lote de dibujo para todas; con el almacén lleno (unas cien posiciones) va fluido (medido en ~120 FPS en un portátil modesto).
 - Cuando llega una operación por el feed de actividad en vivo, la posición afectada se resalta unos segundos (ver «Actividad en vivo»).
 
 ### Modo demostración (solo admin)

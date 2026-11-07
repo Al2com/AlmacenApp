@@ -1,4 +1,4 @@
-import { OrbitControls, Stats } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { actividad } from '../../api/panel'
@@ -179,7 +179,6 @@ export function Plano() {
 
       <div className="plano-escena">
         <Canvas camera={{ position: [13, 10, 20], fov: 50 }}>
-          {import.meta.env.DEV && <Stats />}
           <ambientLight intensity={0.6} />
           <hemisphereLight args={['#ffffff', '#5b6472', 0.5]} />
           <directionalLight position={[8, 14, 10]} intensity={1} />
