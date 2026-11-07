@@ -81,8 +81,7 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
 
         // Modo demostración: solo admin, nunca en producción.
         Route::middleware('can:usar-demostracion')->prefix('demostracion')->group(function (): void {
-            Route::get('/estado', [DemostracionController::class, 'estado']);
-            Route::post('/confirmar', [DemostracionController::class, 'confirmar']);
+            Route::get('/ruta', [DemostracionController::class, 'ruta']);
         });
     });
 });

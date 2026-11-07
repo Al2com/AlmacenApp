@@ -27,7 +27,7 @@ class DemostracionApiTest extends TestCase
         return User::factory()->create(['rol' => Rol::Admin]);
     }
 
-    private function lanzarPedido(): void
+    private function lanzarPedido(string $codigo): void
     {
         $produccion = User::factory()->create(['rol' => Rol::OperadorProduccion]);
         $articulo = Articulo::factory()->create();
@@ -38,39 +38,38 @@ class DemostracionApiTest extends TestCase
             'cantidad' => 10,
             'cantidad_reservada' => 0,
         ]);
-        (new LanzarOrden)->lanzar($produccion, 'OP-DEMO', [['articulo' => $articulo, 'cantidad' => 5]]);
+        (new LanzarOrden)->lanzar($produccion, $codigo, [['articulo' => $articulo, 'cantidad' => 5]]);
     }
 
-    public function test_el_admin_ve_el_estado_de_la_demostracion(): void
+    public function test_el_admin_obtiene_la_ruta_del_ultimo_pedido(): void
     {
-        $this->lanzarPedido();
+        $this->lanzarPedido('OP-UNO');
+        $this->travelTo('2026-11-05 09:05:00');
+        $this->lanzarPedido('OP-DOS');
 
         $this->actingAs($this->admin())
-            ->getJson('/api/demostracion/estado')
+            ->getJson('/api/demostracion/ruta')
             ->assertOk()
-            ->assertJsonPath('tarea.orden', 'OP-DEMO')
-            ->assertJsonPath('pendientes', 1);
+            ->assertJsonPath('orden', 'OP-DOS')
+            ->assertJsonPath('tareas.0.orden', 'OP-DOS');
     }
 
-    public function test_el_admin_confirma_la_siguiente_tarea(): void
+    public function test_sin_pedidos_la_ruta_viene_vacia(): void
     {
-        $this->lanzarPedido();
-
         $this->actingAs($this->admin())
-            ->postJson('/api/demostracion/confirmar')
+            ->getJson('/api/demostracion/ruta')
             ->assertOk()
-            ->assertJsonPath('confirmada.orden', 'OP-DEMO')
-            ->assertJsonPath('siguiente', null)
-            ->assertJsonPath('pendientes', 0);
-
-        $this->assertDatabaseHas('movimientos', ['tipo' => 'consumo', 'cantidad' => 5]);
+            ->assertJsonPath('orden', null)
+            ->assertJsonPath('tareas', []);
     }
 
-    public function test_sin_tareas_el_estado_no_tiene_nada_que_confirmar(): void
+    public function test_la_ruta_no_consume_stock(): void
     {
-        $this->actingAs($this->admin())
-            ->getJson('/api/demostracion/estado')
-            ->assertOk()
-            ->assertJsonPath('tarea', null);
+        $this->lanzarPedido('OP-VISUAL');
+        $antes = (float) Stock::sum('cantidad');
+
+        $this->actingAs($this->admin())->getJson('/api/demostracion/ruta')->assertOk();
+
+        $this->assertSame($antes, (float) Stock::sum('cantidad'));
     }
 }

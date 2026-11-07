@@ -145,6 +145,6 @@ class MatrizRolesTest extends TestCase
     {
         $user = User::factory()->create(['rol' => $rol]);
 
-        $this->actingAs($user)->getJson('/api/demostracion/estado')->assertStatus($rol === Rol::Admin ? 200 : 403);
+        $this->actingAs($user)->getJson('/api/demostracion/ruta')->assertStatus($rol === Rol::Admin ? 200 : 403);
     }
 }
