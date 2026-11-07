@@ -35,6 +35,9 @@ export function useOperarioVirtual({
   const [velocidad, setVelocidad] = useState(1)
   const [fase, setFase] = useState('parado')
   const [tarea, setTarea] = useState(null)
+  const [tareas, setTareas] = useState([])
+  const [indice, setIndice] = useState(0)
+  const [orden, setOrden] = useState(null)
   const [objetivo, setObjetivo] = useState({ x: INICIO.x, z: INICIO.z })
   const [destino, setDestino] = useState(null)
   const [cargadas, setCargadas] = useState(0)
@@ -90,9 +93,11 @@ export function useOperarioVirtual({
 
       const datos = await demoApi.ruta()
       if (!vivo()) return
-      const tareas = datos.tareas ?? []
+      const ruta = datos.tareas ?? []
+      setTareas(ruta)
+      setOrden(datos.orden)
 
-      if (tareas.length === 0) {
+      if (ruta.length === 0) {
         setFase('terminado')
         setTarea(null)
         setMensaje(
@@ -104,8 +109,10 @@ export function useOperarioVirtual({
         return
       }
 
-      for (const t of tareas) {
+      for (let i = 0; i < ruta.length; i++) {
         if (!vivo()) return
+        const t = ruta[i]
+        setIndice(i)
         setTarea(t)
         const meta = destinoDeTarea(t, posiciones, pasillos, zCamara)
         setDestino(meta)
@@ -167,6 +174,9 @@ export function useOperarioVirtual({
     setCargadas(0)
     setVisitadas([])
     setDestino(null)
+    setTareas([])
+    setIndice(0)
+    setOrden(null)
     ciclo(corridaRef.current)
   }, [ciclo])
 
@@ -204,6 +214,9 @@ export function useOperarioVirtual({
     velocidad,
     fase,
     tarea,
+    tareas,
+    indice,
+    orden,
     mensaje,
     objetivo,
     destino,

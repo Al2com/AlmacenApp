@@ -10,6 +10,7 @@ import { ESTADOS } from '../../estados'
 import { Estanteria3D } from '../../three/Estanteria3D'
 import { OperarioAnimado } from '../../three/OperarioAnimado'
 import { ModoDemostracion } from './ModoDemostracion'
+import { PdaOperario } from './PdaOperario'
 import { useOperarioVirtual } from './useOperarioVirtual'
 
 function prefiereSinMovimiento() {
@@ -209,6 +210,7 @@ export function Plano() {
             posicionRef={posOperario}
           />
         </Canvas>
+        {esAdmin && <PdaOperario demo={demo} />}
       </div>
 
       <div className="leyenda">
