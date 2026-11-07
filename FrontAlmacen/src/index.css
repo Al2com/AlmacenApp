@@ -92,6 +92,12 @@ button {
   color: #fff;
 }
 
+.boton-peligro {
+  background: transparent;
+  color: var(--naranja-texto);
+  border: 1.5px solid var(--naranja-texto);
+}
+
 .campo {
   display: flex;
   flex-direction: column;

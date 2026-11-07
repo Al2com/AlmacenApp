@@ -53,4 +53,5 @@ export const api = {
   get: (ruta) => peticion('GET', ruta),
   post: (ruta, datos) => peticion('POST', ruta, datos),
   put: (ruta, datos) => peticion('PUT', ruta, datos),
+  delete: (ruta) => peticion('DELETE', ruta),
 }

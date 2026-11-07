@@ -211,6 +211,19 @@ function OrdenCard({ orden, alCambiar }) {
     }
   }
 
+  async function borrar() {
+    if (
+      !window.confirm(`¿Borrar la orden ${orden.codigo}? No se puede deshacer.`)
+    ) {
+      return
+    }
+    await accion(ordenesApi.borrar)
+  }
+
+  // Solo se puede borrar antes de empezar el picking (lanzada) o si está cancelada.
+  const sePuedeBorrar =
+    orden.estado === 'lanzada' || orden.estado === 'cancelada'
+
   return (
     <div className="tarjeta orden">
       <header className="orden-cabecera">
@@ -260,6 +273,16 @@ function OrdenCard({ orden, alCambiar }) {
             onClick={() => accion(ordenesApi.entregar)}
           >
             marcar entregada
+          </button>
+        )}
+        {sePuedeBorrar && (
+          <button
+            type="button"
+            className="boton boton-peligro"
+            disabled={ocupado}
+            onClick={borrar}
+          >
+            borrar
           </button>
         )}
       </div>
