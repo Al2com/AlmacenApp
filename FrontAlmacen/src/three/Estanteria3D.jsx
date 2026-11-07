@@ -93,6 +93,7 @@ export function Estanteria3D({
 
       <Cajas
         cajas={cajas}
+        limite={posiciones.length}
         seleccion={seleccion}
         resaltada={resaltada}
         onSeleccion={onSeleccion}
@@ -101,13 +102,16 @@ export function Estanteria3D({
   )
 }
 
-function Cajas({ cajas, seleccion, resaltada, onSeleccion }) {
+function Cajas({ cajas, limite, seleccion, resaltada, onSeleccion }) {
   if (cajas.length === 0) {
     return null
   }
 
+  // `limit` fijo (el total de posiciones) para que el buffer de instancias no
+  // se reinicie cuando cambia el número de cajas visibles (p. ej. al marcarse
+  // una posición como recogida durante la demostración).
   return (
-    <Instances limit={cajas.length} range={cajas.length}>
+    <Instances limit={Math.max(limite, cajas.length)} range={cajas.length}>
       <boxGeometry args={[0.9, 0.9, 0.9]} />
       <meshStandardMaterial />
       {cajas.map((caja) => {
