@@ -3,8 +3,6 @@ import {
   ANCHO_RACK,
   CENTRO_BAHIA,
   PASO_PASILLO,
-  PROF_RACK,
-  necesitaEscalera,
 } from '../../config/almacen'
 
 const SX = ALMACEN.anchoBahia
@@ -19,12 +17,14 @@ export const VEL_BASE = 2.6
 // de un pasillo a otro sin atravesar ninguna estantería.
 export const X_CARRIL = -(ANCHO_RACK / 2 + 0.9)
 
-// Dónde se planta el operario (en el pasillo, delante del rack) para una tarea.
-const FRENTE = PROF_RACK + 0.7
+// El operario camina por el centro del pasillo (a media distancia entre dos
+// estanterías), no pegado al rack.
+const FRENTE = PASO_PASILLO / 2
 
 /**
- * Posición de pie del operario para una tarea y la altura de la caja. Para la
- * cámara refrigerada, delante de ella al fondo.
+ * Para una tarea: dónde se planta el operario (en el centro del pasillo, a la
+ * altura de la bahía) y dónde está la caja en la estantería (de ahí sale la
+ * bola hacia el transpalé). Para la cámara refrigerada, delante de ella.
  */
 export function destinoDeTarea(tarea, posiciones, pasillos, zCamara) {
   if (!tarea) return null
@@ -32,23 +32,19 @@ export function destinoDeTarea(tarea, posiciones, pasillos, zCamara) {
   const yCaja = (tarea.nivel - 1) * SY
 
   if (posicion?.refrigerado) {
-    return { x: 0, z: zCamara - 1, yCaja, escalera: false }
+    return { x: 0, z: zCamara - 2, caja: [0, yCaja, zCamara] }
   }
 
   const indice = pasillos.indexOf(tarea.pasillo)
-  return {
-    x: (tarea.estanteria - CENTRO_BAHIA) * SX,
-    z: indice * PASO_PASILLO + FRENTE,
-    yCaja,
-    escalera: necesitaEscalera(tarea.nivel),
-  }
+  const zRack = indice * PASO_PASILLO
+  const x = (tarea.estanteria - CENTRO_BAHIA) * SX
+  return { x, z: zRack + FRENTE, caja: [x, yCaja, zRack] }
 }
 
 /**
  * Puntos por los que pasa el operario para ir de `origen` a `destino` sin
- * cruzar las estanterías. En el mismo pasillo se desliza por delante de las
- * bahías; para cambiar de pasillo sale al carril lateral, lo recorre hasta la
- * altura del pasillo de destino y entra por él.
+ * cruzar las estanterías. En el mismo pasillo avanza por el centro; para
+ * cambiar de pasillo sale al carril lateral, lo recorre y entra por él.
  */
 export function rutaEntre(origen, destino) {
   if (Math.abs(origen.z - destino.z) < 0.05) {

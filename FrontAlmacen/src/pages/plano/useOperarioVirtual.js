@@ -5,10 +5,8 @@ import { VEL_BASE, X_CARRIL, destinoDeTarea, rutaEntre } from './rutaOperario'
 // Duraciones base (ms) de las fases quietas (las caminadas se calculan según la
 // distancia). Se ajustan luego por la velocidad elegida.
 const DURACION = {
-  subiendo: 900,
-  cogiendo: 650,
-  bajando: 800,
-  cargando: 450,
+  cogiendo: 900, // lo que tarda la bola en salir de la estantería y llegar al carro
+  cargando: 350,
   descargando: 1000,
 }
 
@@ -20,11 +18,11 @@ function distancia(a, b) {
 }
 
 /**
- * Orquesta al operario virtual para recrear la ruta de picking del último
- * pedido lanzado (la pide una vez a la API). Lo lleva por los pasillos (nunca a
- * través de las estanterías) empujando un transpalé, y al llegar a cada caja la
- * marca como recogida. No confirma ni consume stock: es una recreación visual
- * de la ruta, repetible las veces que haga falta.
+ * Orquesta al operario virtual para recrear la ruta de picking de la orden
+ * activa (la pide una vez a la API). Lo lleva por el centro de los pasillos
+ * hasta cada ubicación; allí sale una bola de la estantería hacia el transpalé
+ * y la posición queda marcada como recogida. No confirma ni consume stock: es
+ * una recreación visual, repetible.
  */
 export function useOperarioVirtual({
   posiciones,
@@ -37,8 +35,8 @@ export function useOperarioVirtual({
   const [velocidad, setVelocidad] = useState(1)
   const [fase, setFase] = useState('parado')
   const [tarea, setTarea] = useState(null)
-  const [objetivo, setObjetivo] = useState({ x: INICIO.x, y: 0, z: INICIO.z })
-  const [escalera, setEscalera] = useState(null)
+  const [objetivo, setObjetivo] = useState({ x: INICIO.x, z: INICIO.z })
+  const [destino, setDestino] = useState(null)
   const [cargadas, setCargadas] = useState(0)
   const [visitadas, setVisitadas] = useState([])
   const [mensaje, setMensaje] = useState('')
@@ -76,10 +74,10 @@ export function useOperarioVirtual({
 
       const vivo = () => miCorrida === corridaRef.current
 
-      const andarHasta = async (destino) => {
-        for (const punto of rutaEntre(pos, destino)) {
+      const andarHasta = async (meta) => {
+        for (const punto of rutaEntre(pos, meta)) {
           setFase('andando')
-          setObjetivo({ x: punto.x, y: 0, z: punto.z })
+          setObjetivo({ x: punto.x, z: punto.z })
           await esperar(
             (distancia(pos, punto) / VEL_BASE / velocidadRef.current) * 1000
           )
@@ -100,7 +98,7 @@ export function useOperarioVirtual({
         setMensaje(
           datos.orden
             ? 'El pedido no tiene tareas de picking que recorrer.'
-            : 'No hay ningún pedido. Crea uno en «órdenes» y vuelve a iniciar.'
+            : 'No hay ninguna orden activa. Crea un pedido en «órdenes».'
         )
         setActiva(false)
         return
@@ -109,39 +107,20 @@ export function useOperarioVirtual({
       for (const t of tareas) {
         if (!vivo()) return
         setTarea(t)
-        const destino = destinoDeTarea(t, posiciones, pasillos, zCamara)
+        const meta = destinoDeTarea(t, posiciones, pasillos, zCamara)
+        setDestino(meta)
 
         if (!reducida) {
-          if (!(await andarHasta(destino))) return
+          if (!(await andarHasta(meta))) return
 
-          if (destino.escalera) {
-            setEscalera({ x: destino.x, z: destino.z, altura: destino.yCaja })
-            setFase('subiendo')
-            setObjetivo({ x: destino.x, y: destino.yCaja, z: destino.z })
-            await esperar(DURACION.subiendo / velocidadRef.current)
-            if (!vivo()) return
-          }
-
+          // La bola sale de la estantería y viaja al transpalé (lo anima el 3D).
           setFase('cogiendo')
-          setObjetivo({
-            x: destino.x,
-            y: destino.escalera ? destino.yCaja : 0,
-            z: destino.z,
-          })
           await esperar(DURACION.cogiendo / velocidadRef.current)
           if (!vivo()) return
-
-          if (destino.escalera) {
-            setFase('bajando')
-            setObjetivo({ x: destino.x, y: 0, z: destino.z })
-            await esperar(DURACION.bajando / velocidadRef.current)
-            if (!vivo()) return
-          }
-          setEscalera(null)
         }
 
-        // Al llegar, se marca la caja como recogida (no se confirma ni se
-        // consume stock): la posición queda visible como recogida en el plano.
+        // La bola llega al carro: se marca la posición como recogida (sin
+        // confirmar ni consumir stock) y se apila una caja en el transpalé.
         setFase('cargando')
         llevadas += 1
         setCargadas(llevadas)
@@ -149,12 +128,12 @@ export function useOperarioVirtual({
           prev.includes(t.ubicacion) ? prev : [...prev, t.ubicacion]
         )
         await esperar(
-          (reducida ? 450 : DURACION.cargando) / velocidadRef.current
+          (reducida ? 400 : DURACION.cargando) / velocidadRef.current
         )
         if (!vivo()) return
 
-        pos.x = destino.x
-        pos.z = destino.z
+        pos.x = meta.x
+        pos.z = meta.z
       }
 
       if (!vivo()) return
@@ -162,6 +141,7 @@ export function useOperarioVirtual({
       // Al terminar, un único viaje a producción a dejar el palé cargado.
       if (llevadas > 0 && !reducida) {
         setTarea(null)
+        setDestino(null)
         if (!(await andarHasta({ x: 0, z: zCamara + 2.4 }))) return
         setFase('descargando')
         await esperar(DURACION.descargando / velocidadRef.current)
@@ -171,7 +151,7 @@ export function useOperarioVirtual({
 
       setFase('terminado')
       setTarea(null)
-      setEscalera(null)
+      setDestino(null)
       setMensaje('Ruta recorrida. Pulsa «reiniciar recorrido» para repetirla.')
       setActiva(false)
     },
@@ -186,7 +166,7 @@ export function useOperarioVirtual({
     setMensaje('')
     setCargadas(0)
     setVisitadas([])
-    setEscalera(null)
+    setDestino(null)
     ciclo(corridaRef.current)
   }, [ciclo])
 
@@ -199,7 +179,7 @@ export function useOperarioVirtual({
     setPausada(false)
     setFase('parado')
     setTarea(null)
-    setEscalera(null)
+    setDestino(null)
     setVisitadas([])
   }, [])
 
@@ -226,7 +206,7 @@ export function useOperarioVirtual({
     tarea,
     mensaje,
     objetivo,
-    escalera,
+    destino,
     cargadas,
     visitadas,
     corrida,

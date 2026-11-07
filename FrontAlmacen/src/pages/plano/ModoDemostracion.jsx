@@ -1,10 +1,8 @@
 const ETIQUETA_FASE = {
   parado: 'en espera',
   andando: 'caminando por el pasillo',
-  subiendo: 'subiendo a la escalera',
-  cogiendo: 'cogiendo la caja',
-  bajando: 'bajando de la escalera',
-  cargando: 'cargando la caja en el transpalé',
+  cogiendo: 'recogiendo de la ubicación',
+  cargando: 'cargando en el transpalé',
   descargando: 'dejando el palé en producción',
   terminado: 'terminado',
 }

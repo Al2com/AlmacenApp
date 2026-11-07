@@ -195,9 +195,9 @@ export function Plano() {
               key={demo.corrida}
               fase={demo.fase}
               objetivo={demo.objetivo}
+              destino={demo.destino}
               velocidad={demo.velocidad}
               cargadas={demo.cargadas}
-              escalera={demo.escalera}
               inicio={demo.inicio}
               posicionRef={posOperario}
             />
