@@ -6,17 +6,21 @@ use App\Enums\Rol;
 use App\Enums\TipoMovimiento;
 use App\Models\Articulo;
 use App\Models\Lote;
+use App\Models\User;
+use App\Services\LanzarOrden;
 use App\Services\RegistroMovimiento;
 use Database\Seeders\Concerns\CreaEstructuraBase;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 
 /**
- * Llena el almacén para una demostración: 25 artículos y el 85-90 % de las
- * posiciones ocupadas. No lanza ningún pedido: la demostración recrea la ruta
- * del pedido que cree el usuario (ver RutaDemostracion). Todo escrito a mano
- * (sin Faker ni azar), así que siempre da el mismo resultado. Se invoca con
- * `php artisan almacen:demo` (nunca en producción); ver SembrarDemo.
+ * Llena el almacén para una demostración: 25 artículos, el 85-90 % de las
+ * posiciones ocupadas y un pedido `OP-DEMO-GRANDE` ya lanzado, listo para
+ * simular su ruta en el plano. El usuario puede crear más pedidos y borrarlos;
+ * la demostración recrea la ruta del pedido que esté lanzado (ver
+ * RutaDemostracion). Todo escrito a mano (sin Faker ni azar), así que siempre
+ * da el mismo resultado. Se invoca con `php artisan almacen:demo` (nunca en
+ * producción); ver SembrarDemo.
  */
 class DemoSeeder extends Seeder
 {
@@ -39,6 +43,7 @@ class DemoSeeder extends Seeder
 
         $siguienteNormal = 0;
         $siguienteFrio = 0;
+        $totalesPorArticulo = [];
 
         foreach ($this->catalogo() as $config) {
             $fabrica = $config['caducidad'] ? Articulo::factory() : Articulo::factory()->sinCaducidad();
@@ -48,6 +53,7 @@ class DemoSeeder extends Seeder
                 'unidad' => $config['unidad'],
             ]);
 
+            $total = 0.0;
             for ($i = 0; $i < $config['lotes']; $i++) {
                 $fechaRecepcion = $hoy->copy()->subDays(40 - $i * 3);
 
@@ -72,8 +78,38 @@ class DemoSeeder extends Seeder
                 }
 
                 $servicio->registrar(TipoMovimiento::Recepcion, $lote, self::CANTIDAD_POR_LOTE, $recepcion, destino: $ubicacion);
+                $total += self::CANTIDAD_POR_LOTE;
             }
+
+            $totalesPorArticulo[$config['codigo']] = $total;
         }
+
+        $this->lanzarPedidoLargo($usuarios[Rol::OperadorProduccion->value], $totalesPorArticulo);
+    }
+
+    /**
+     * El pedido de demostración `OP-DEMO-GRANDE`: una línea por artículo (25),
+     * pidiendo casi todo el stock de cada uno para que el FEFO reparta entre
+     * varios lotes y ubicaciones, salvo en dos artículos donde pide más de lo
+     * que hay para que se vea la preparación parcial.
+     *
+     * @param  array<string, float>  $totalesPorArticulo
+     */
+    private function lanzarPedidoLargo(User $produccion, array $totalesPorArticulo): void
+    {
+        $sinStockSuficiente = ['DEMO-017', 'DEMO-020'];
+
+        $lineas = [];
+        foreach ($totalesPorArticulo as $codigo => $total) {
+            $lineas[] = [
+                'articulo' => Articulo::where('codigo', $codigo)->firstOrFail(),
+                // Deja siempre un lote intacto, para que el resto se reparta
+                // entre varios lotes y ubicaciones por FEFO.
+                'cantidad' => in_array($codigo, $sinStockSuficiente, true) ? $total + 500 : $total - self::CANTIDAD_POR_LOTE,
+            ];
+        }
+
+        (new LanzarOrden)->lanzar($produccion, 'OP-DEMO-GRANDE', $lineas);
     }
 
     /**

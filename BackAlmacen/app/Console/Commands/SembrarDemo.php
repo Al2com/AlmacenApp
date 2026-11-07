@@ -6,10 +6,11 @@ use Database\Seeders\DemoSeeder;
 use Illuminate\Console\Command;
 
 /**
- * Deja el almacén lleno (85-90 %) para una demostración, sin ningún pedido: los
- * pedidos los crea el usuario y el plano recrea su ruta. Solo para entorno
- * local: se niega a tocar nada en producción. Se ejecuta sobre una base ya
- * migrada; con `--fresh` la recrea antes (borra todo y vuelve a migrar).
+ * Deja el almacén lleno (85-90 %) y un pedido `OP-DEMO-GRANDE` lanzado para
+ * simular su ruta en el plano; el usuario puede crear y borrar más pedidos.
+ * Solo para entorno local: se niega a tocar nada en producción. Se ejecuta
+ * sobre una base ya migrada; con `--fresh` la recrea antes (borra todo y
+ * vuelve a migrar).
  */
 class SembrarDemo extends Command
 {
@@ -32,7 +33,7 @@ class SembrarDemo extends Command
 
         $this->info('Sembrando datos de demostración…');
         (new DemoSeeder)->run();
-        $this->info('Listo: almacén lleno (sin pedidos; créalos tú y simúlalos en el plano).');
+        $this->info('Listo: almacén lleno y pedido OP-DEMO-GRANDE lanzado para simular en el plano.');
 
         return self::SUCCESS;
     }

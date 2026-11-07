@@ -4,7 +4,10 @@ namespace Tests\Feature\Demo;
 
 use App\Models\Articulo;
 use App\Models\Movimiento;
+use App\Models\OrdenLinea;
+use App\Models\OrdenProduccion;
 use App\Models\Stock;
+use App\Models\TareaPicking;
 use App\Models\Ubicacion;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -94,15 +97,27 @@ class DemoSeederTest extends TestCase
         (new DemoSeeder)->run();
 
         $this->assertDatabaseHas('articulos', ['codigo' => 'DEMO-001']);
-        $this->assertDatabaseHas('articulos', ['codigo' => 'DEMO-025']);
+        $this->assertDatabaseHas('ordenes_produccion', ['codigo' => 'OP-DEMO-GRANDE']);
     }
 
-    public function test_no_lanza_ningun_pedido(): void
+    public function test_deja_el_pedido_de_demostracion_lanzado_con_preparacion_parcial(): void
     {
-        // El pedido ya no lo crea el seeder: la demostración recrea la ruta del
-        // que cree el usuario. El almacén se siembra lleno pero sin órdenes.
+        // El seeder deja una orden OP-DEMO-GRANDE ya lanzada, lista para
+        // simular su ruta en el plano. La orden es la de la demostración.
         (new DemoSeeder)->run();
 
-        $this->assertDatabaseCount('ordenes_produccion', 0);
+        $orden = OrdenProduccion::where('codigo', 'OP-DEMO-GRANDE')->firstOrFail();
+        $this->assertSame('lanzada', $orden->estado->value);
+
+        $lineas = OrdenLinea::where('orden_id', $orden->id)->count();
+        $this->assertGreaterThanOrEqual(25, $lineas);
+        $this->assertLessThanOrEqual(40, $lineas);
+
+        // Al menos una línea no consigue reservar toda la cantidad pedida.
+        $haySinServir = OrdenLinea::where('orden_id', $orden->id)
+            ->get()
+            ->contains(fn (OrdenLinea $linea) => (float) TareaPicking::where('orden_linea_id', $linea->id)->sum('cantidad') < (float) $linea->cantidad_solicitada);
+
+        $this->assertTrue($haySinServir);
     }
 }
