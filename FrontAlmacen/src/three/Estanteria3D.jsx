@@ -1,5 +1,4 @@
 import { Html, Instance, Instances } from '@react-three/drei'
-import { BackSide } from 'three'
 import {
   ALMACEN,
   ALTURA_SUELO,
@@ -23,12 +22,6 @@ const SUELO = '#cfd4da'
 const CRISTAL = '#bfe3ef'
 const ZONA_RECEPCION = '#2447d6'
 const ZONA_PRODUCCION = '#e8590c'
-const PARED = '#dfe3e8'
-const TECHO = '#eef1f4'
-
-// Alto de la nave (desde el suelo) y holgura lateral de las paredes.
-const ALTO_NAVE = 6
-const MARGEN_X = ANCHO_RACK / 2 + 2
 
 /**
  * Recrea el almacén: un rack por pasillo en paralelo (con baldas por nivel,
@@ -80,7 +73,6 @@ export function Estanteria3D({
   return (
     <group>
       <Suelo hastaZ={zCamara} numPasillos={pasillos.length} />
-      <Edificio hastaZ={zCamara} />
       <ZonaExtremo tipo="recepción" z={-2.6} color={ZONA_RECEPCION} />
       <ZonaExtremo
         tipo="producción"
@@ -294,83 +286,6 @@ function RotulosPasillo({ numero }) {
         <span className="plano-label">pasillo {numero}</span>
       </Html>
     </>
-  )
-}
-
-/**
- * La nave: suelo (ya puesto aparte), cuatro paredes y techo, más unas lámparas
- * de techo. Las paredes y el techo usan `BackSide`, así que la cámara, al
- * orbitar por fuera, ve a través de las caras cercanas hacia dentro del
- * almacén (no tapan la vista) pero cierran la escena por el fondo.
- */
-function Edificio({ hastaZ }) {
-  const minZ = -4
-  const maxZ = hastaZ + 4
-  const largo = maxZ - minZ
-  const centroZ = (minZ + maxZ) / 2
-  const baseY = ALTURA_SUELO
-  const techoY = baseY + ALTO_NAVE
-
-  const lamparas = []
-  for (let z = minZ + 4; z < maxZ; z += 7) {
-    lamparas.push(z)
-  }
-
-  return (
-    <group>
-      {/* Paredes laterales */}
-      <mesh
-        position={[-MARGEN_X, baseY + ALTO_NAVE / 2, centroZ]}
-        rotation={[0, Math.PI / 2, 0]}
-      >
-        <planeGeometry args={[largo, ALTO_NAVE]} />
-        <meshStandardMaterial color={PARED} side={BackSide} />
-      </mesh>
-      <mesh
-        position={[MARGEN_X, baseY + ALTO_NAVE / 2, centroZ]}
-        rotation={[0, -Math.PI / 2, 0]}
-      >
-        <planeGeometry args={[largo, ALTO_NAVE]} />
-        <meshStandardMaterial color={PARED} side={BackSide} />
-      </mesh>
-      {/* Paredes de los extremos (recepción y producción) */}
-      <mesh position={[0, baseY + ALTO_NAVE / 2, minZ]}>
-        <planeGeometry args={[MARGEN_X * 2, ALTO_NAVE]} />
-        <meshStandardMaterial color={PARED} side={BackSide} />
-      </mesh>
-      <mesh
-        position={[0, baseY + ALTO_NAVE / 2, maxZ]}
-        rotation={[0, Math.PI, 0]}
-      >
-        <planeGeometry args={[MARGEN_X * 2, ALTO_NAVE]} />
-        <meshStandardMaterial color={PARED} side={BackSide} />
-      </mesh>
-      {/* Techo */}
-      <mesh position={[0, techoY, centroZ]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[MARGEN_X * 2, largo]} />
-        <meshStandardMaterial color={TECHO} side={BackSide} />
-      </mesh>
-      {/* Lámparas de techo */}
-      {lamparas.map((z) => (
-        <group key={z} position={[0, techoY - 0.15, z]}>
-          <mesh>
-            <boxGeometry args={[MARGEN_X * 1.2, 0.12, 0.5]} />
-            <meshStandardMaterial
-              color="#ffffff"
-              emissive="#fff6da"
-              emissiveIntensity={0.9}
-            />
-          </mesh>
-          <pointLight
-            position={[0, -0.5, 0]}
-            intensity={8}
-            distance={12}
-            decay={2}
-            color="#fff4d6"
-          />
-        </group>
-      ))}
-    </group>
   )
 }
 
