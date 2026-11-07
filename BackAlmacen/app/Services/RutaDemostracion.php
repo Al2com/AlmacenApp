@@ -15,12 +15,14 @@ use Illuminate\Support\Collection;
 class RutaDemostracion
 {
     /**
-     * La orden activa más reciente (la última que se lanzó), o null si no hay.
+     * La última orden lanzada (aún sin empezar a picar), o null si no hay. La
+     * demostración sirve para ver el recorrido ANTES de picar, así que solo
+     * mira las lanzadas, no las que ya están en picking.
      */
     public function ultimaOrden(): ?OrdenProduccion
     {
         return OrdenProduccion::query()
-            ->whereIn('estado', [EstadoOrden::Lanzada->value, EstadoOrden::EnPicking->value])
+            ->where('estado', EstadoOrden::Lanzada->value)
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->first();

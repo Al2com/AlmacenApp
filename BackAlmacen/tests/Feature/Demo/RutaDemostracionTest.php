@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Demo;
 
+use App\Enums\EstadoOrden;
 use App\Enums\Rol;
 use App\Models\Articulo;
 use App\Models\Lote;
@@ -42,12 +43,13 @@ class RutaDemostracionTest extends TestCase
         ]);
     }
 
-    private function lanzar(string $codigo): void
+    private function lanzar(string $codigo): OrdenProduccion
     {
         $produccion = User::factory()->create(['rol' => Rol::OperadorProduccion]);
         $articulo = Articulo::factory()->create();
         $this->stock($articulo, 10);
-        (new LanzarOrden)->lanzar($produccion, $codigo, [['articulo' => $articulo, 'cantidad' => 5]]);
+
+        return (new LanzarOrden)->lanzar($produccion, $codigo, [['articulo' => $articulo, 'cantidad' => 5]]);
     }
 
     public function test_sin_ordenes_activas_no_hay_ruta(): void
@@ -65,6 +67,21 @@ class RutaDemostracionTest extends TestCase
 
         $this->assertNotNull($orden);
         $this->assertSame('OP-2', $orden->codigo);
+    }
+
+    public function test_ignora_las_ordenes_que_ya_estan_en_picking(): void
+    {
+        // La demostración es para ver el recorrido ANTES de picar: solo mira
+        // las órdenes lanzadas, no las que ya se están preparando.
+        $this->lanzar('OP-LANZADA')->refresh();
+        $this->travelTo('2026-11-05 09:05:00');
+        $enPicking = $this->lanzar('OP-EN-PICKING');
+        $enPicking->forceFill(['estado' => EstadoOrden::EnPicking])->save();
+
+        $orden = (new RutaDemostracion)->ultimaOrden();
+
+        $this->assertNotNull($orden);
+        $this->assertSame('OP-LANZADA', $orden->codigo);
     }
 
     public function test_las_tareas_salen_en_orden_de_ruta(): void
