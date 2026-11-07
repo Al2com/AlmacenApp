@@ -32,6 +32,11 @@ class OrdenProduccionPolicy
         return $this->gestiona($user, $orden);
     }
 
+    public function borrar(User $user, OrdenProduccion $orden): bool
+    {
+        return $this->gestiona($user, $orden);
+    }
+
     public function entregar(User $user, OrdenProduccion $orden): bool
     {
         return $this->gestiona($user, $orden);

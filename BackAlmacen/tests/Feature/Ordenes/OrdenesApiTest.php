@@ -121,4 +121,46 @@ class OrdenesApiTest extends TestCase
         $this->actingAs($produccion)->postJson("/api/ordenes/{$orden->id}/entregar")->assertOk();
         $this->assertSame(EstadoOrden::Entregada, $orden->refresh()->estado);
     }
+
+    public function test_borrar_una_orden_lanzada_la_elimina(): void
+    {
+        $produccion = $this->produccion();
+        $articulo = $this->articuloConStock(50);
+
+        $orden = $this->actingAs($produccion)->postJson('/api/ordenes', [
+            'codigo' => 'OP-BORRAR',
+            'lineas' => [['articulo_id' => $articulo->id, 'cantidad' => 20]],
+        ])->json('data.id');
+
+        $this->actingAs($produccion)->deleteJson("/api/ordenes/{$orden}")->assertOk();
+
+        $this->assertDatabaseMissing('ordenes_produccion', ['id' => $orden]);
+        $this->assertDatabaseHas('stock', ['cantidad_reservada' => 0]);
+    }
+
+    public function test_un_operador_no_puede_borrar_la_orden_de_otro(): void
+    {
+        $ajena = OrdenProduccion::factory()->create([
+            'user_id' => $this->produccion()->id,
+            'estado' => EstadoOrden::Lanzada,
+        ]);
+
+        $this->actingAs($this->produccion())
+            ->deleteJson("/api/ordenes/{$ajena->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('ordenes_produccion', ['id' => $ajena->id]);
+    }
+
+    public function test_no_se_borra_una_orden_en_picking(): void
+    {
+        $produccion = $this->produccion();
+        $orden = OrdenProduccion::factory()->create([
+            'user_id' => $produccion->id,
+            'estado' => EstadoOrden::EnPicking,
+        ]);
+
+        $this->actingAs($produccion)->deleteJson("/api/ordenes/{$orden->id}")->assertStatus(422);
+        $this->assertDatabaseHas('ordenes_produccion', ['id' => $orden->id]);
+    }
 }

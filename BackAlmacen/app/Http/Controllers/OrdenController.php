@@ -10,6 +10,7 @@ use App\Http\Resources\OrdenResource;
 use App\Models\Articulo;
 use App\Models\OrdenProduccion;
 use App\Models\User;
+use App\Services\BorrarOrden;
 use App\Services\CancelarOrden;
 use App\Services\LanzarOrden;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +27,7 @@ class OrdenController extends Controller
     public function __construct(
         private readonly LanzarOrden $lanzar,
         private readonly CancelarOrden $cancelar,
+        private readonly BorrarOrden $borrar,
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -80,6 +82,15 @@ class OrdenController extends Controller
         $this->cancelar->cancelar($orden);
 
         return new OrdenResource($orden->load(['lineas.articulo', 'user']));
+    }
+
+    public function destroy(OrdenProduccion $orden): JsonResponse
+    {
+        Gate::authorize('borrar', $orden);
+
+        $this->borrar->borrar($orden);
+
+        return response()->json(['message' => 'Orden borrada.']);
     }
 
     public function entregar(OrdenProduccion $orden): OrdenResource

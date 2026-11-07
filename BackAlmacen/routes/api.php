@@ -51,6 +51,7 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function (): void {
         Route::get('/ordenes', [OrdenController::class, 'index']);
         Route::post('/ordenes', [OrdenController::class, 'store']);
         Route::get('/ordenes/{orden}', [OrdenController::class, 'show']);
+        Route::delete('/ordenes/{orden}', [OrdenController::class, 'destroy']);
         Route::post('/ordenes/{orden}/cancelar', [OrdenController::class, 'cancelar']);
         Route::post('/ordenes/{orden}/entregar', [OrdenController::class, 'entregar']);
 
