@@ -76,11 +76,11 @@ El flujo real del almacén sigue su curso: se pueden crear más pedidos, lanzarl
 
 ### Modo demostración (operario virtual)
 
-Desde el plano 3D, el admin puede poner en marcha un **operario virtual** que recrea la **ruta de picking de la orden que esté lanzada** (`OP-DEMO-GRANDE` o la última que haya lanzado el usuario), recorriéndola tarea a tarea en orden de ruta. Es una **recreación visual, no un picking real**: no confirma nada ni consume stock, así que se puede repetir las veces que haga falta y las cajas recogidas no desaparecen (quedan marcadas como recogidas en el plano). Sirve para ver el recorrido **antes** de picar, por eso solo mira las órdenes lanzadas (no las que ya están en picking).
+Desde el plano 3D, el admin puede poner en marcha un **operario virtual** que recrea la **ruta de picking de la orden activa** (`OP-DEMO-GRANDE` o la última que haya lanzado el usuario), recorriéndola tarea a tarea en orden de ruta. Es una **recreación visual, no un picking real**: no confirma nada ni consume stock, así que se puede repetir las veces que haga falta y las cajas recogidas no desaparecen (quedan marcadas como recogidas en el plano). Vale igual para una orden recién lanzada que para una que ya está en picking; solo quedan fuera las entregadas y canceladas.
 
-- El endpoint `GET /api/demostracion/ruta` (servicio `RutaDemostracion`) solo lee: devuelve la última orden lanzada y sus tareas en orden de ruta. Está detrás de la policy de admin y del mismo cierre de producción (gate `usar-demostracion`).
+- El endpoint `GET /api/demostracion/ruta` (servicio `RutaDemostracion`) solo lee: devuelve la última orden activa (lanzada o en picking) y sus tareas en orden de ruta. Está detrás de la policy de admin y del mismo cierre de producción (gate `usar-demostracion`).
 - El front decide la ruta a pie y el ritmo (caminar por los pasillos, escalera, pausar, acelerar, seguir con la cámara...) a partir de esas tareas. Al no confirmar nada, la animación no puede tocar el stock.
-- Si no hay ninguna orden lanzada, la demostración lo avisa en vez de recorrer nada.
+- Si no hay ninguna orden activa, la demostración lo avisa en vez de recorrer nada.
 
 ## Límites conocidos
 

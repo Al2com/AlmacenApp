@@ -69,19 +69,25 @@ class RutaDemostracionTest extends TestCase
         $this->assertSame('OP-2', $orden->codigo);
     }
 
-    public function test_ignora_las_ordenes_que_ya_estan_en_picking(): void
+    public function test_tambien_recrea_una_orden_en_picking(): void
     {
-        // La demostración es para ver el recorrido ANTES de picar: solo mira
-        // las órdenes lanzadas, no las que ya se están preparando.
-        $this->lanzar('OP-LANZADA')->refresh();
-        $this->travelTo('2026-11-05 09:05:00');
+        // La demostración vale para la orden activa, esté lanzada o ya en
+        // picking (es solo visual, no cambia el picking real).
         $enPicking = $this->lanzar('OP-EN-PICKING');
         $enPicking->forceFill(['estado' => EstadoOrden::EnPicking])->save();
 
         $orden = (new RutaDemostracion)->ultimaOrden();
 
         $this->assertNotNull($orden);
-        $this->assertSame('OP-LANZADA', $orden->codigo);
+        $this->assertSame('OP-EN-PICKING', $orden->codigo);
+    }
+
+    public function test_ignora_las_ordenes_entregadas_o_canceladas(): void
+    {
+        $entregada = $this->lanzar('OP-ENTREGADA');
+        $entregada->forceFill(['estado' => EstadoOrden::Entregada])->save();
+
+        $this->assertNull((new RutaDemostracion)->ultimaOrden());
     }
 
     public function test_las_tareas_salen_en_orden_de_ruta(): void
