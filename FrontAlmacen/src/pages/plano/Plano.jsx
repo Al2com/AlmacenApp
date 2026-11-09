@@ -1,0 +1,303 @@
+import { OrbitControls } from '@react-three/drei'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { actividad } from '../../api/panel'
+import { estanteria as cargarEstanteria } from '../../api/plano'
+import { useSesion } from '../../auth/contexto'
+import { DetallePosicion } from '../../components/DetallePosicion'
+import { PASO_PASILLO } from '../../config/almacen'
+import { ESTADOS } from '../../estados'
+import { Estanteria3D } from '../../three/Estanteria3D'
+import { OperarioAnimado } from '../../three/OperarioAnimado'
+import { ModoDemostracion } from './ModoDemostracion'
+import { PdaOperario } from './PdaOperario'
+import { useOperarioVirtual } from './useOperarioVirtual'
+
+function prefiereSinMovimiento() {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
+export function Plano() {
+  const { usuario } = useSesion()
+  const esAdmin = usuario.rol === 'admin'
+
+  const [posiciones, setPosiciones] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState(false)
+  const [seleccion, setSeleccion] = useState(null)
+  const [foco, setFoco] = useState(null)
+  const [resaltada, setResaltada] = useState(null)
+  const [seguir, setSeguir] = useState(false)
+  const posOperario = useRef(null)
+
+  // Modo presentación (solo admin): oculta la ayuda y agranda tipografías para
+  // grabar el vídeo. Es cosmético y del front; se puede abrir con ?presentacion=1.
+  const [params] = useSearchParams()
+  const [presentacion, setPresentacion] = useState(
+    esAdmin && params.get('presentacion') === '1'
+  )
+
+  useEffect(() => {
+    let activo = true
+
+    async function actualizar(inicial) {
+      try {
+        const datos = await cargarEstanteria()
+        if (activo) {
+          setPosiciones(datos)
+          setError(false)
+        }
+      } catch {
+        if (activo && inicial) setError(true)
+      } finally {
+        if (activo && inicial) setCargando(false)
+      }
+    }
+
+    actualizar(true)
+    // Se refresca cada 5 s para reflejar en vivo lo que se reserva (pedidos) y
+    // lo que se consume (picking en la PDA).
+    const id = setInterval(() => actualizar(false), 5000)
+    return () => {
+      activo = false
+      clearInterval(id)
+    }
+  }, [])
+
+  // El admin ve resaltarse la posición de cada operación que llega por el feed.
+  useEffect(() => {
+    if (!esAdmin) return undefined
+    let activo = true
+    let primera = true
+    let limpiar
+    const desde = { current: null }
+
+    async function sondear() {
+      try {
+        const nuevos = await actividad(desde.current)
+        if (!activo || nuevos.length === 0) {
+          primera = false
+          return
+        }
+        desde.current = nuevos[0].fecha
+        if (!primera) {
+          const conUbicacion = nuevos.find((evento) => evento.ubicacion)
+          if (conUbicacion) {
+            setResaltada(conUbicacion.ubicacion)
+            clearTimeout(limpiar)
+            limpiar = setTimeout(() => activo && setResaltada(null), 3000)
+          }
+        }
+        primera = false
+      } catch {
+        // Un fallo puntual no rompe el plano.
+      }
+    }
+
+    sondear()
+    const id = setInterval(sondear, 5000)
+    return () => {
+      activo = false
+      clearInterval(id)
+      clearTimeout(limpiar)
+    }
+  }, [esAdmin])
+
+  // Clave estable de los pasillos: el refresco cada 5 s (y tras cada pick de la
+  // demostración) crea un array de posiciones nuevo, pero los pasillos son los
+  // mismos. Memorizar por esta clave evita que `pasillos` cambie de identidad
+  // en cada refresco y, con ello, que la cámara se recoloque sola y deshaga el
+  // giro que esté haciendo el usuario.
+  const pasillosKey = useMemo(
+    () =>
+      [
+        ...new Set(
+          posiciones.filter((p) => !p.refrigerado).map((p) => p.pasillo)
+        ),
+      ]
+        .sort((a, b) => a - b)
+        .join(','),
+    [posiciones]
+  )
+  const pasillos = useMemo(
+    () => (pasillosKey ? pasillosKey.split(',').map(Number) : []),
+    [pasillosKey]
+  )
+  const zCamara = pasillos.length * PASO_PASILLO + 1.5
+  const reducida = useMemo(() => prefiereSinMovimiento(), [])
+
+  const demo = useOperarioVirtual({
+    posiciones,
+    pasillos,
+    zCamara,
+    reducida,
+  })
+
+  if (error) {
+    return <p className="error">No se pudo cargar el plano.</p>
+  }
+  if (cargando) {
+    return <p className="cargando">Cargando plano…</p>
+  }
+
+  return (
+    <section
+      className={`plano-pagina${presentacion ? ' plano-presentacion' : ''}`}
+    >
+      <div className="plano-barra">
+        <div
+          className="pasillos"
+          role="group"
+          aria-label="Centrar en un pasillo"
+        >
+          <button
+            type="button"
+            className={`boton boton-secundario${foco == null ? ' activo' : ''}`}
+            onClick={() => {
+              setFoco(null)
+              setSeguir(false)
+            }}
+          >
+            todo
+          </button>
+          {pasillos.map((numero) => (
+            <button
+              key={numero}
+              type="button"
+              className={`boton boton-secundario${foco === numero ? ' activo' : ''}`}
+              onClick={() => {
+                setFoco(numero)
+                setSeguir(false)
+              }}
+            >
+              pasillo {numero}
+            </button>
+          ))}
+        </div>
+
+        {esAdmin && (
+          <ModoDemostracion
+            demo={demo}
+            seguir={seguir}
+            onSeguir={() => setSeguir((s) => !s)}
+          />
+        )}
+
+        {esAdmin && (
+          <button
+            type="button"
+            className={`boton boton-secundario plano-presentar${presentacion ? ' activo' : ''}`}
+            aria-pressed={presentacion}
+            onClick={() => setPresentacion((p) => !p)}
+          >
+            {presentacion ? 'salir de presentación' : 'presentación'}
+          </button>
+        )}
+      </div>
+
+      {!presentacion && (
+        <p className="plano-ayuda">
+          Arrastra para girar, rueda para acercar. Pulsa una posición para ver
+          su contenido. Centra un pasillo para ver el número de cada bahía.
+        </p>
+      )}
+
+      <div className="plano-cuerpo">
+        {esAdmin && <PdaOperario demo={demo} />}
+        <div className="plano-escena">
+          <Canvas camera={{ position: [13, 10, 20], fov: 50 }}>
+            <ambientLight intensity={0.6} />
+            <hemisphereLight args={['#ffffff', '#5b6472', 0.5]} />
+            <directionalLight position={[8, 14, 10]} intensity={1} />
+            <Estanteria3D
+              posiciones={posiciones}
+              seleccion={seleccion}
+              resaltada={resaltada}
+              foco={foco}
+              visitadas={demo.visitadas}
+              onSeleccion={setSeleccion}
+            />
+            {esAdmin && demo.activa && !reducida && (
+              <OperarioAnimado
+                key={demo.corrida}
+                fase={demo.fase}
+                objetivo={demo.objetivo}
+                destino={demo.destino}
+                velocidad={demo.velocidad}
+                cargadas={demo.cargadas}
+                inicio={demo.inicio}
+                posicionRef={posOperario}
+              />
+            )}
+            <ControlCamara
+              foco={foco}
+              pasillos={pasillos}
+              seguir={seguir && demo.activa}
+              posicionRef={posOperario}
+            />
+          </Canvas>
+          {seleccion && (
+            <div className="plano-detalle">
+              <button
+                type="button"
+                className="plano-detalle-cerrar"
+                aria-label="Cerrar detalle"
+                onClick={() => setSeleccion(null)}
+              >
+                ✕
+              </button>
+              <DetallePosicion posicion={seleccion} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="leyenda">
+        {Object.values(ESTADOS).map((e) => (
+          <span key={e.clase}>
+            <span className={`muestra ${e.clase}`} aria-hidden="true" />
+            {e.etiqueta}
+            {e.simbolo ? ` (${e.simbolo})` : ''}
+          </span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function ControlCamara({ foco, pasillos, seguir, posicionRef }) {
+  const ref = useRef()
+  const { camera } = useThree()
+
+  useEffect(() => {
+    const control = ref.current
+    if (!control || seguir) return
+    const centro = (pasillos.length * PASO_PASILLO) / 2
+    if (foco == null) {
+      control.target.set(0, 1, centro)
+      camera.position.set(15, 11, centro + 21)
+    } else {
+      const z = pasillos.indexOf(foco) * PASO_PASILLO
+      control.target.set(0, 1, z)
+      camera.position.set(9, 6, z + 10)
+    }
+    control.update()
+  }, [foco, pasillos, camera, seguir])
+
+  // Con «seguir» activo, la cámara acompaña al operario manteniendo el ángulo
+  // actual (se puede seguir orbitando alrededor de él).
+  useFrame((_, delta) => {
+    const control = ref.current
+    if (!seguir || !control || !posicionRef?.current) return
+    const offset = camera.position.clone().sub(control.target)
+    control.target.lerp(posicionRef.current, Math.min(1, delta * 4))
+    camera.position.copy(control.target).add(offset)
+    control.update()
+  })
+
+  return <OrbitControls ref={ref} enablePan={false} makeDefault />
+}

@@ -1,0 +1,134 @@
+<?php
+
+namespace Tests\Feature\Demo;
+
+use App\Enums\EstadoOrden;
+use App\Enums\EstadoTarea;
+use App\Enums\Rol;
+use App\Models\Articulo;
+use App\Models\Lote;
+use App\Models\OrdenProduccion;
+use App\Models\Stock;
+use App\Models\Ubicacion;
+use App\Models\User;
+use App\Services\LanzarOrden;
+use App\Services\RutaDemostracion;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+/**
+ * La demostración recrea la ruta de picking del último pedido lanzado, sin
+ * consumir nada. El servicio solo lee: da esa orden y sus tareas en orden de
+ * ruta.
+ *
+ * Rojo hasta que exista RutaDemostracion.
+ */
+class RutaDemostracionTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->travelTo('2026-11-05 09:00:00');
+    }
+
+    private function stock(Articulo $articulo, float $cantidad): void
+    {
+        $lote = Lote::factory()->for($articulo)->create(['caducidad' => '2027-02-01']);
+        Stock::create([
+            'lote_id' => $lote->id,
+            'ubicacion_id' => Ubicacion::factory()->create()->id,
+            'cantidad' => $cantidad,
+            'cantidad_reservada' => 0,
+        ]);
+    }
+
+    private function lanzar(string $codigo): OrdenProduccion
+    {
+        $produccion = User::factory()->create(['rol' => Rol::OperadorProduccion]);
+        $articulo = Articulo::factory()->create();
+        $this->stock($articulo, 10);
+
+        return (new LanzarOrden)->lanzar($produccion, $codigo, [['articulo' => $articulo, 'cantidad' => 5]]);
+    }
+
+    public function test_sin_ordenes_activas_no_hay_ruta(): void
+    {
+        $this->assertNull((new RutaDemostracion)->ultimaOrden());
+    }
+
+    public function test_toma_la_ultima_orden_lanzada(): void
+    {
+        $this->lanzar('OP-1');
+        $this->travelTo('2026-11-05 09:05:00');
+        $this->lanzar('OP-2');
+
+        $orden = (new RutaDemostracion)->ultimaOrden();
+
+        $this->assertNotNull($orden);
+        $this->assertSame('OP-2', $orden->codigo);
+    }
+
+    public function test_tambien_recrea_una_orden_en_picking(): void
+    {
+        // La demostración vale para la orden activa, esté lanzada o ya en
+        // picking (es solo visual, no cambia el picking real).
+        $enPicking = $this->lanzar('OP-EN-PICKING');
+        $enPicking->forceFill(['estado' => EstadoOrden::EnPicking])->save();
+
+        $orden = (new RutaDemostracion)->ultimaOrden();
+
+        $this->assertNotNull($orden);
+        $this->assertSame('OP-EN-PICKING', $orden->codigo);
+    }
+
+    public function test_ignora_las_ordenes_entregadas_o_canceladas(): void
+    {
+        $entregada = $this->lanzar('OP-ENTREGADA');
+        $entregada->forceFill(['estado' => EstadoOrden::Entregada])->save();
+
+        $this->assertNull((new RutaDemostracion)->ultimaOrden());
+    }
+
+    public function test_las_tareas_salen_en_orden_de_ruta(): void
+    {
+        $this->lanzar('OP-RUTA');
+        $orden = OrdenProduccion::where('codigo', 'OP-RUTA')->firstOrFail();
+
+        $tareas = (new RutaDemostracion)->tareas($orden);
+
+        $secuencias = $tareas->pluck('secuencia')->all();
+        $ordenadas = $secuencias;
+        sort($ordenadas);
+        $this->assertSame($ordenadas, $secuencias);
+        $this->assertNotEmpty($tareas);
+    }
+
+    public function test_tareas_solo_devuelve_las_pendientes(): void
+    {
+        // La demostración confirma de verdad; solo debe recorrer lo que queda
+        // por picar, para no intentar reconfirmar una tarea ya hecha.
+        $this->lanzar('OP-PEND');
+        $orden = OrdenProduccion::where('codigo', 'OP-PEND')->firstOrFail();
+        $primera = (new RutaDemostracion)->tareas($orden)->first();
+        $primera->forceFill(['estado' => EstadoTarea::Confirmada])->save();
+
+        $pendientes = (new RutaDemostracion)->tareas($orden);
+
+        $this->assertTrue($pendientes->every(fn ($t) => $t->estado->value === 'pendiente'));
+        $this->assertFalse($pendientes->contains('id', $primera->id));
+    }
+
+    public function test_no_consume_stock(): void
+    {
+        $this->lanzar('OP-SIN-CONSUMO');
+        $antes = (float) Stock::sum('cantidad');
+
+        $servicio = new RutaDemostracion;
+        $orden = $servicio->ultimaOrden();
+        $servicio->tareas($orden);
+
+        $this->assertSame($antes, (float) Stock::sum('cantidad'));
+    }
+}
