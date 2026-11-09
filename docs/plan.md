@@ -49,6 +49,7 @@ Para enseñar la aplicación en marcha (no es una fase de construcción, es una 
 - Estados de posición ampliados (`en_picking`, `recogida`) y el detalle con «para qué orden» y «lo que queda tras recoger»: `docs/frontend.md`.
 - Modo demostración en el plano 3D (solo admin): un operario virtual recorre la ruta de la orden activa y **confirma cada línea de verdad por la API** (movimiento real que descuenta stock), con PDA lateral del operario, bola azul del picking, controles de pausa/velocidad/reinicio, seguimiento de cámara y resumen final. Respeta `prefers-reduced-motion`. Detalle en `docs/frontend.md` y `docs/diseno.md`.
 - Pantalla del plano a todo el ancho/alto con barra de controles fina y **modo presentación** (solo admin, `?presentacion=1`) para grabar el vídeo de presentación. Cosmético y del front.
+- Órdenes: pestañas por estado (en curso / entregadas / canceladas), **código autogenerado** (`OP-0001`) y **nombre** libre, alta de líneas rápida con buscador de artículo y aviso de **stock disponible**.
 
 ## Decisiones abiertas
 

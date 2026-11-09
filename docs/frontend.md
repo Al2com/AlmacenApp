@@ -81,6 +81,17 @@ De dónde sale cada dato (para construir los endpoints): las cifras y el orden F
 
 El admin ve un feed que muestra cada operación en cuanto ocurre —hora, usuario, tipo (recepción, reserva, traslado, ajuste, baja), lote, ubicación y cantidad— y los eventos de auditoría (accesos fallidos, cambios de configuración). Cuando llega una operación, en el plano la posición afectada se **resalta unos segundos**. No muestra datos sensibles: ni contraseñas, ni tokens, ni correos completos. Primera versión por **consulta periódica cada 5 s** a un endpoint que devuelve lo nuevo desde la última marca de tiempo; el comportamiento, las fuentes y el paso a tiempo real están en `docs/diseno.md`.
 
+## Órdenes de producción (`/ordenes`)
+
+Admin y producción. La lista se agrupa en **pestañas por estado** —**en curso** (lanzada · en picking · preparada), **entregadas** y **canceladas**, con el número en cada una— para que la vista de trabajo quede limpia y lo cerrado se consulte aparte (no se borra el histórico). Cada tarjeta muestra el **nombre** de la orden y, debajo, su código.
+
+Formulario de nueva orden:
+
+- El **código se genera solo** (`OP-0001…`, correlativo); el usuario solo pone un **nombre** libre (p. ej. «Línea 2»).
+- **Alta de líneas rápida a mano**: un buscador de artículo por nombre (datalist); al elegir uno, el foco salta a la cantidad; **Intro** añade la línea y vuelve al buscador. Las líneas añadidas se listan con botón de quitar.
+- Al elegir un artículo se muestra su **stock disponible** (del catálogo, `cantidad - reservado`), y se **avisa** si la cantidad pedida lo supera (la orden saldrá parcial, no se bloquea).
+- Acciones por orden: **cancelar** (lanzada), **marcar entregada** (preparada) y **borrar** (lanzada o cancelada).
+
 ## Stock y lotes (`/stock`)
 
 Lectura para todos los roles; las acciones de inventario, solo para admin y gestor.
