@@ -98,6 +98,18 @@ button {
   border: 1.5px solid var(--naranja-texto);
 }
 
+.ordenes-pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ordenes-pestanas .boton {
+  min-height: 38px;
+  padding: 6px 14px;
+}
+
 .campo {
   display: flex;
   flex-direction: column;

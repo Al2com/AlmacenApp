@@ -10,6 +10,18 @@ const ESTADO_ORDEN = {
   cancelada: 'cancelada',
 }
 
+// Las órdenes se agrupan por estado para que la vista de trabajo quede limpia y
+// lo ya cerrado se consulte aparte.
+const PESTANAS = [
+  {
+    clave: 'curso',
+    etiqueta: 'en curso',
+    estados: ['lanzada', 'en_picking', 'preparada'],
+  },
+  { clave: 'entregadas', etiqueta: 'entregadas', estados: ['entregada'] },
+  { clave: 'canceladas', etiqueta: 'canceladas', estados: ['cancelada'] },
+]
+
 export function Ordenes() {
   const [ordenes, setOrdenes] = useState([])
   const [articulos, setArticulos] = useState([])
@@ -60,6 +72,49 @@ export function Ordenes() {
         <ListaOrdenes ordenes={ordenes} alCambiar={recargar} />
       </div>
     </section>
+  )
+}
+
+function ListaOrdenes({ ordenes, alCambiar }) {
+  const [pestana, setPestana] = useState('curso')
+
+  const grupos = PESTANAS.map((p) => ({
+    ...p,
+    ordenes: ordenes.filter((o) => p.estados.includes(o.estado)),
+  }))
+  const activa = grupos.find((g) => g.clave === pestana) ?? grupos[0]
+
+  return (
+    <div>
+      <div
+        className="ordenes-pestanas"
+        role="tablist"
+        aria-label="Filtrar órdenes"
+      >
+        {grupos.map((g) => (
+          <button
+            key={g.clave}
+            type="button"
+            role="tab"
+            aria-selected={g.clave === pestana}
+            className={`boton boton-secundario${g.clave === pestana ? ' activo' : ''}`}
+            onClick={() => setPestana(g.clave)}
+          >
+            {g.etiqueta} ({g.ordenes.length})
+          </button>
+        ))}
+      </div>
+
+      {activa.ordenes.length === 0 ? (
+        <div className="tarjeta">
+          <p className="vacio">No hay órdenes {activa.etiqueta}.</p>
+        </div>
+      ) : (
+        activa.ordenes.map((orden) => (
+          <OrdenCard key={orden.id} orden={orden} alCambiar={alCambiar} />
+        ))
+      )}
+    </div>
   )
 }
 
@@ -177,24 +232,6 @@ function FormularioOrden({ articulos, alCrear }) {
         {enviando ? 'lanzando…' : 'lanzar orden'}
       </button>
     </form>
-  )
-}
-
-function ListaOrdenes({ ordenes, alCambiar }) {
-  if (ordenes.length === 0) {
-    return (
-      <div className="tarjeta">
-        <p className="vacio">No hay órdenes todavía.</p>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      {ordenes.map((orden) => (
-        <OrdenCard key={orden.id} orden={orden} alCambiar={alCambiar} />
-      ))}
-    </div>
   )
 }
 
