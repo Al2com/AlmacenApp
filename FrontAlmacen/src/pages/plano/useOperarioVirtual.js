@@ -18,11 +18,12 @@ function distancia(a, b) {
 }
 
 /**
- * Orquesta al operario virtual para recrear la ruta de picking de la orden
+ * Orquesta al operario virtual para recorrer la ruta de picking de la orden
  * activa (la pide una vez a la API). Lo lleva por el centro de los pasillos
  * hasta cada ubicación; allí sale una bola de la estantería hacia el transpalé
- * y la posición queda marcada como recogida. No confirma ni consume stock: es
- * una recreación visual, repetible.
+ * y, en ese momento, se **confirma la línea de verdad** por la API (movimiento
+ * real que descuenta stock). La animación no toca el stock por su cuenta; solo
+ * dispara la confirmación. La posición se mantiene marcada como recogida.
  */
 export function useOperarioVirtual({
   posiciones,
@@ -94,8 +95,9 @@ export function useOperarioVirtual({
       const datos = await demoApi.ruta()
       if (!vivo()) return
       const ruta = datos.tareas ?? []
+      const codigoOrden = datos.orden
       setTareas(ruta)
-      setOrden(datos.orden)
+      setOrden(codigoOrden)
 
       if (ruta.length === 0) {
         setFase('terminado')
@@ -126,11 +128,27 @@ export function useOperarioVirtual({
           if (!vivo()) return
         }
 
-        // La bola llega al carro: se marca la posición como recogida (sin
-        // confirmar ni consumir stock) y se apila una caja en el transpalé.
+        // La bola llega al carro: se confirma la línea DE VERDAD por la API
+        // (movimiento real que descuenta stock). La animación no toca el stock;
+        // solo dispara la confirmación en este momento.
         setFase('cargando')
+        try {
+          await demoApi.confirmar(t.id)
+        } catch {
+          if (!vivo()) return
+          setMensaje(
+            `No se pudo confirmar la línea ${t.ubicacion}. Se detiene la demostración.`
+          )
+          setFase('terminado')
+          setTarea(null)
+          setDestino(null)
+          setActiva(false)
+          return
+        }
+        if (!vivo()) return
         llevadas += 1
         setCargadas(llevadas)
+        // Se mantiene marcada como recogida (verde) aunque el stock ya baje.
         setVisitadas((prev) =>
           prev.includes(t.ubicacion) ? prev : [...prev, t.ubicacion]
         )
@@ -159,7 +177,9 @@ export function useOperarioVirtual({
       setFase('terminado')
       setTarea(null)
       setDestino(null)
-      setMensaje('Ruta recorrida. Pulsa «reiniciar recorrido» para repetirla.')
+      setMensaje(
+        `Demostración terminada: ${llevadas} ${llevadas === 1 ? 'línea recogida' : 'líneas recogidas'}${codigoOrden ? ` del pedido ${codigoOrden}` : ''}.`
+      )
       setActiva(false)
     },
     [posiciones, pasillos, zCamara, reducida, esperar]
