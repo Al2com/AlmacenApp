@@ -1,6 +1,7 @@
 import { OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { actividad } from '../../api/panel'
 import { estanteria as cargarEstanteria } from '../../api/plano'
 import { useSesion } from '../../auth/contexto'
@@ -32,6 +33,13 @@ export function Plano() {
   const [resaltada, setResaltada] = useState(null)
   const [seguir, setSeguir] = useState(false)
   const posOperario = useRef(null)
+
+  // Modo presentación (solo admin): oculta la ayuda y agranda tipografías para
+  // grabar el vídeo. Es cosmético y del front; se puede abrir con ?presentacion=1.
+  const [params] = useSearchParams()
+  const [presentacion, setPresentacion] = useState(
+    esAdmin && params.get('presentacion') === '1'
+  )
 
   useEffect(() => {
     let activo = true
@@ -137,80 +145,115 @@ export function Plano() {
   }
 
   return (
-    <section>
-      <h1>plano del almacén</h1>
-      <p className="pda-progreso">
-        Arrastra para girar, rueda para acercar. Pulsa una posición para ver su
-        contenido. Centra un pasillo para ver el número de cada bahía.
-      </p>
-
-      {esAdmin && (
-        <ModoDemostracion
-          demo={demo}
-          seguir={seguir}
-          onSeguir={() => setSeguir((s) => !s)}
-        />
-      )}
-
-      <div className="pasillos" role="group" aria-label="Centrar en un pasillo">
-        <button
-          type="button"
-          className={foco == null ? 'activo' : undefined}
-          onClick={() => {
-            setFoco(null)
-            setSeguir(false)
-          }}
+    <section
+      className={`plano-pagina${presentacion ? ' plano-presentacion' : ''}`}
+    >
+      <div className="plano-barra">
+        <div
+          className="pasillos"
+          role="group"
+          aria-label="Centrar en un pasillo"
         >
-          todo
-        </button>
-        {pasillos.map((numero) => (
           <button
-            key={numero}
             type="button"
-            className={foco === numero ? 'activo' : undefined}
+            className={`boton boton-secundario${foco == null ? ' activo' : ''}`}
             onClick={() => {
-              setFoco(numero)
+              setFoco(null)
               setSeguir(false)
             }}
           >
-            pasillo {numero}
+            todo
           </button>
-        ))}
+          {pasillos.map((numero) => (
+            <button
+              key={numero}
+              type="button"
+              className={`boton boton-secundario${foco === numero ? ' activo' : ''}`}
+              onClick={() => {
+                setFoco(numero)
+                setSeguir(false)
+              }}
+            >
+              pasillo {numero}
+            </button>
+          ))}
+        </div>
+
+        {esAdmin && (
+          <ModoDemostracion
+            demo={demo}
+            seguir={seguir}
+            onSeguir={() => setSeguir((s) => !s)}
+          />
+        )}
+
+        {esAdmin && (
+          <button
+            type="button"
+            className={`boton boton-secundario plano-presentar${presentacion ? ' activo' : ''}`}
+            aria-pressed={presentacion}
+            onClick={() => setPresentacion((p) => !p)}
+          >
+            {presentacion ? 'salir de presentación' : 'presentación'}
+          </button>
+        )}
       </div>
 
-      <div className="plano-escena">
-        <Canvas camera={{ position: [13, 10, 20], fov: 50 }}>
-          <ambientLight intensity={0.6} />
-          <hemisphereLight args={['#ffffff', '#5b6472', 0.5]} />
-          <directionalLight position={[8, 14, 10]} intensity={1} />
-          <Estanteria3D
-            posiciones={posiciones}
-            seleccion={seleccion}
-            resaltada={resaltada}
-            foco={foco}
-            visitadas={demo.visitadas}
-            onSeleccion={setSeleccion}
-          />
-          {esAdmin && demo.activa && !reducida && (
-            <OperarioAnimado
-              key={demo.corrida}
-              fase={demo.fase}
-              objetivo={demo.objetivo}
-              destino={demo.destino}
-              velocidad={demo.velocidad}
-              cargadas={demo.cargadas}
-              inicio={demo.inicio}
+      {!presentacion && (
+        <p className="plano-ayuda">
+          Arrastra para girar, rueda para acercar. Pulsa una posición para ver
+          su contenido. Centra un pasillo para ver el número de cada bahía.
+        </p>
+      )}
+
+      <div className="plano-cuerpo">
+        {esAdmin && <PdaOperario demo={demo} />}
+        <div className="plano-escena">
+          <Canvas camera={{ position: [13, 10, 20], fov: 50 }}>
+            <ambientLight intensity={0.6} />
+            <hemisphereLight args={['#ffffff', '#5b6472', 0.5]} />
+            <directionalLight position={[8, 14, 10]} intensity={1} />
+            <Estanteria3D
+              posiciones={posiciones}
+              seleccion={seleccion}
+              resaltada={resaltada}
+              foco={foco}
+              visitadas={demo.visitadas}
+              onSeleccion={setSeleccion}
+            />
+            {esAdmin && demo.activa && !reducida && (
+              <OperarioAnimado
+                key={demo.corrida}
+                fase={demo.fase}
+                objetivo={demo.objetivo}
+                destino={demo.destino}
+                velocidad={demo.velocidad}
+                cargadas={demo.cargadas}
+                inicio={demo.inicio}
+                posicionRef={posOperario}
+              />
+            )}
+            <ControlCamara
+              foco={foco}
+              pasillos={pasillos}
+              seguir={seguir && demo.activa}
               posicionRef={posOperario}
             />
+          </Canvas>
+          {seleccion && (
+            <div className="plano-detalle">
+              <button
+                type="button"
+                className="plano-detalle-cerrar"
+                aria-label="Cerrar detalle"
+                onClick={() => setSeleccion(null)}
+              >
+                ✕
+              </button>
+              <DetallePosicion posicion={seleccion} />
+            </div>
           )}
-          <ControlCamara
-            foco={foco}
-            pasillos={pasillos}
-            seguir={seguir && demo.activa}
-            posicionRef={posOperario}
-          />
-        </Canvas>
-        {esAdmin && <PdaOperario demo={demo} />}
+        </div>
       </div>
 
       <div className="leyenda">
@@ -222,8 +265,6 @@ export function Plano() {
           </span>
         ))}
       </div>
-
-      {seleccion && <DetallePosicion posicion={seleccion} />}
     </section>
   )
 }

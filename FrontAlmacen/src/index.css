@@ -1158,64 +1158,139 @@ th {
 }
 
 /* --- Plano 3D --- */
-.demo-panel {
-  margin-bottom: 0.75rem;
+/* La página del plano ocupa todo el ancho y la altura restante bajo la barra. */
+.contenido-plano {
+  max-width: none;
+  padding: 10px 16px 12px;
 }
 
-.demo-cabecera {
+.plano-pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: calc(100dvh - 92px);
+  min-height: 420px;
+}
+
+/* Barra fina encima del lienzo: filtros de pasillo + controles de demo. */
+.plano-barra {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  gap: 8px;
 }
 
-.demo-controles {
+.plano-barra .pasillos,
+.demo-barra {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  align-items: center;
+  gap: 6px;
 }
 
-.demo-controles .boton {
-  min-height: 40px;
+.plano-barra .boton {
+  min-height: 36px;
+  padding: 6px 12px;
   font-size: 0.85rem;
 }
 
-.demo-estado {
-  margin: 0.75rem 0 0;
+.demo-barra-estado {
+  color: var(--texto-2);
+  font-size: 0.85rem;
+}
+
+.plano-presentar {
+  margin-left: auto;
+}
+
+.plano-ayuda {
+  margin: 0;
   color: var(--texto-2);
   font-size: 0.9rem;
 }
 
+/* Cuerpo: PDA (columna) + lienzo que ocupa el resto. */
+.plano-cuerpo {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
 .plano-escena {
   position: relative;
-  height: 520px;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
   border: 1px solid var(--linea);
   border-radius: var(--radio);
   background: var(--hormigon);
-  margin-bottom: 0.75rem;
   touch-action: none;
 }
 
-/* PDA del operario: pantalla superpuesta a la izquierda del plano. */
-.pda-operario {
+/* Detalle de posición: tarjeta flotante sobre el lienzo (no empuja el layout). */
+.plano-detalle {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  width: 230px;
-  max-height: calc(100% - 24px);
+  right: 12px;
+  bottom: 12px;
+  width: min(560px, 92%);
+  max-height: 72%;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  box-shadow: 0 8px 24px rgba(14, 27, 46, 0.22);
+  padding: 10px 12px;
+}
+
+.plano-detalle .tarjeta {
+  margin-top: 0 !important;
+  box-shadow: none;
+  padding: 0;
+}
+
+.plano-detalle-cerrar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--texto-2);
+}
+
+/* PDA del operario: columna propia al lado del lienzo (no lo tapa), plegable. */
+.pda-operario {
+  flex: 0 0 258px;
+  max-width: 258px;
   display: flex;
   flex-direction: column;
-  background: rgba(10, 18, 32, 0.92);
+  background: #0a1220;
   color: #e7edf5;
   border: 1px solid #2a3b57;
   border-radius: 8px;
-  padding: 10px;
+  padding: 12px;
   font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
-  font-size: 0.72rem;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  pointer-events: none;
+  font-size: 0.82rem;
+}
+
+.pda-operario.pda-plegada {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.pda-op-toggle {
+  border: 1px solid #3e5075;
+  background: #14233c;
+  color: #cdd9ea;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font: inherit;
+  cursor: pointer;
 }
 
 .pda-op-cabecera {
@@ -1223,8 +1298,8 @@ th {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #2a3b57;
-  padding-bottom: 6px;
-  margin-bottom: 6px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
 }
 
 .pda-op-marca {
@@ -1235,19 +1310,20 @@ th {
 
 .pda-op-orden {
   color: #9fb3cc;
+  margin-bottom: 6px;
 }
 
 .pda-op-progreso {
   display: flex;
   justify-content: space-between;
   color: #9fb3cc;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .pda-op-accion {
   background: #14233c;
   border-radius: 5px;
-  padding: 5px 7px;
+  padding: 6px 8px;
   margin-bottom: 8px;
   color: #ffd98a;
 }
@@ -1262,15 +1338,15 @@ th {
 
 .pda-op-linea {
   display: grid;
-  grid-template-columns: 14px 1fr auto auto;
-  gap: 6px;
-  padding: 2px 3px;
+  grid-template-columns: 16px 1fr auto auto;
+  gap: 8px;
+  padding: 3px 4px;
   border-radius: 4px;
   white-space: nowrap;
 }
 
 .pda-op-hecha {
-  color: #5f9e6b;
+  color: #6fb67c;
 }
 
 .pda-op-actual {
@@ -1285,6 +1361,17 @@ th {
 .pda-op-cant {
   color: inherit;
   opacity: 0.85;
+}
+
+/* Modo presentación: tipografías algo mayores para grabar. */
+.plano-presentacion .pda-operario {
+  font-size: 0.95rem;
+  flex-basis: 300px;
+  max-width: 300px;
+}
+
+.plano-presentacion .leyenda {
+  font-size: 1.02rem;
 }
 
 .plano-label {

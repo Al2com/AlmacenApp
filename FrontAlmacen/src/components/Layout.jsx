@@ -1,10 +1,12 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useSesion } from '../auth/contexto'
 import { menuDe, NOMBRE_ROL } from '../auth/roles'
 
 export function Layout({ children }) {
   const { usuario, salir } = useSesion()
   const menu = usuario ? menuDe(usuario.rol) : []
+  // El plano 3D ocupa todo el ancho; el resto de pantallas van centradas.
+  const ancho = useLocation().pathname.startsWith('/plano')
 
   return (
     <>
@@ -36,7 +38,9 @@ export function Layout({ children }) {
           </button>
         </div>
       </header>
-      <main className="contenido">{children}</main>
+      <main className={`contenido${ancho ? ' contenido-plano' : ''}`}>
+        {children}
+      </main>
     </>
   )
 }

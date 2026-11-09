@@ -8,10 +8,10 @@ const ETIQUETA_FASE = {
 }
 
 /**
- * Controles del modo demostración: solo para el admin. Pone en marcha al
- * operario virtual, que confirma tareas reales por la API (ver
- * useOperarioVirtual). Pausar, acelerar y reiniciar son controles de la
- * animación; no deshacen ninguna confirmación ya hecha.
+ * Controles del modo demostración (solo admin), en una barra fina encima del
+ * lienzo. El detalle de lo que hace el operario se ve en la PDA; aquí solo el
+ * estado en una línea. Pausar, acelerar, reiniciar y seguir son controles de la
+ * animación.
  */
 export function ModoDemostracion({ demo, seguir, onSeguir }) {
   const {
@@ -19,7 +19,6 @@ export function ModoDemostracion({ demo, seguir, onSeguir }) {
     pausada,
     velocidad,
     fase,
-    tarea,
     mensaje,
     iniciar,
     detener,
@@ -29,14 +28,13 @@ export function ModoDemostracion({ demo, seguir, onSeguir }) {
   } = demo
 
   return (
-    <div className="tarjeta demo-panel">
-      <div className="demo-cabecera">
-        <h2>modo demostración</h2>
-        {!activa ? (
-          <button type="button" className="boton" onClick={iniciar}>
-            iniciar demostración
-          </button>
-        ) : (
+    <div className="demo-barra" role="group" aria-label="Modo demostración">
+      {!activa ? (
+        <button type="button" className="boton" onClick={iniciar}>
+          iniciar demostración
+        </button>
+      ) : (
+        <>
           <button
             type="button"
             className="boton boton-secundario"
@@ -44,11 +42,6 @@ export function ModoDemostracion({ demo, seguir, onSeguir }) {
           >
             detener
           </button>
-        )}
-      </div>
-
-      {activa && (
-        <div className="demo-controles">
           <button
             type="button"
             className="boton boton-secundario"
@@ -61,14 +54,14 @@ export function ModoDemostracion({ demo, seguir, onSeguir }) {
             className="boton boton-secundario"
             onClick={acelerar}
           >
-            velocidad ×{velocidad}
+            ×{velocidad}
           </button>
           <button
             type="button"
             className="boton boton-secundario"
             onClick={reiniciar}
           >
-            reiniciar recorrido
+            reiniciar
           </button>
           <button
             type="button"
@@ -76,24 +69,15 @@ export function ModoDemostracion({ demo, seguir, onSeguir }) {
             aria-pressed={seguir}
             onClick={onSeguir}
           >
-            {seguir ? 'vista libre' : 'seguir al operario'}
+            {seguir ? 'vista libre' : 'seguir'}
           </button>
-        </div>
+        </>
       )}
-
-      <p className="demo-estado">
-        {activa && tarea && (
-          <>
-            {ETIQUETA_FASE[fase] ?? fase}: <strong>{tarea.articulo}</strong> ·
-            lote {tarea.lote} · {tarea.ubicacion} · {tarea.cantidad} uds para{' '}
-            {tarea.orden}
-          </>
-        )}
-        {activa && !tarea && (mensaje || 'preparando…')}
-        {!activa &&
-          (mensaje ||
-            'pulsa «iniciar demostración» para ver picar al operario.')}
-      </p>
+      <span className="demo-barra-estado">
+        {activa
+          ? (ETIQUETA_FASE[fase] ?? fase)
+          : mensaje || 'listo para demostrar'}
+      </span>
     </div>
   )
 }

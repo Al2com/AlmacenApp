@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const ACCION_FASE = {
   andando: '➜ yendo a la ubicación',
@@ -10,12 +10,13 @@ const ACCION_FASE = {
 }
 
 /**
- * Pantalla a modo de PDA del operario: muestra, mientras recorre la ruta, qué
- * etiqueta está fichando y cómo avanza por el picking. Es solo un reflejo visual
- * de la demostración (no es la PDA real de la pantalla `/pda`).
+ * Pantalla a modo de PDA del operario, como columna propia al lado del plano
+ * (no tapa el almacén) y plegable. Mientras recorre la ruta muestra qué etiqueta
+ * está fichando y cómo avanza. Es solo un reflejo visual de la demostración.
  */
 export function PdaOperario({ demo }) {
   const { activa, orden, tareas, indice, fase, cargadas } = demo
+  const [plegada, setPlegada] = useState(false)
   const actualRef = useRef(null)
 
   useEffect(() => {
@@ -24,15 +25,40 @@ export function PdaOperario({ demo }) {
 
   if (!activa) return null
 
+  if (plegada) {
+    return (
+      <aside className="pda-operario pda-plegada">
+        <button
+          type="button"
+          className="pda-op-toggle"
+          aria-expanded="false"
+          onClick={() => setPlegada(false)}
+        >
+          PDA ▸
+        </button>
+      </aside>
+    )
+  }
+
   const total = tareas.length
   const enRuta = fase !== 'terminado' && fase !== 'descargando'
 
   return (
-    <div className="pda-operario" aria-live="polite">
+    <aside className="pda-operario" aria-live="polite">
       <div className="pda-op-cabecera">
         <span className="pda-op-marca">PDA · operario</span>
-        {orden && <span className="pda-op-orden">{orden}</span>}
+        <button
+          type="button"
+          className="pda-op-toggle"
+          aria-expanded="true"
+          aria-label="Plegar la PDA"
+          onClick={() => setPlegada(true)}
+        >
+          ▾
+        </button>
       </div>
+
+      {orden && <div className="pda-op-orden">{orden}</div>}
 
       <div className="pda-op-progreso">
         <span>
@@ -65,6 +91,6 @@ export function PdaOperario({ demo }) {
           )
         })}
       </ul>
-    </div>
+    </aside>
   )
 }
