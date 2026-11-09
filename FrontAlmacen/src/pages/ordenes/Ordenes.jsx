@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { articulos as cargarArticulos } from '../../api/catalogo'
 import * as ordenesApi from '../../api/ordenes'
 
@@ -119,33 +119,70 @@ function ListaOrdenes({ ordenes, alCambiar }) {
 }
 
 function FormularioOrden({ articulos, alCrear }) {
-  const [codigo, setCodigo] = useState('')
-  const [lineas, setLineas] = useState([{ articulo_id: '', cantidad: '' }])
+  const [nombre, setNombre] = useState('')
+  const [lineas, setLineas] = useState([])
+  const [busqueda, setBusqueda] = useState('')
+  const [cantidad, setCantidad] = useState('')
   const [errores, setErrores] = useState(null)
   const [enviando, setEnviando] = useState(false)
+  const articuloRef = useRef(null)
+  const cantidadRef = useRef(null)
 
-  function cambiarLinea(indice, campo, valor) {
-    setLineas((actuales) =>
-      actuales.map((linea, i) =>
-        i === indice ? { ...linea, [campo]: valor } : linea
-      )
-    )
+  // El artículo elegido es el que coincide exactamente con el texto (lo pone el
+  // datalist al seleccionar una opción).
+  const articuloSel = articulos.find((a) => a.nombre === busqueda) ?? null
+  const cantidadNum = Number(cantidad)
+  const superaStock =
+    articuloSel && cantidadNum > 0 && cantidadNum > articuloSel.disponible
+
+  function alElegirArticulo(valor) {
+    setBusqueda(valor)
+    if (articulos.some((a) => a.nombre === valor)) {
+      cantidadRef.current?.focus()
+    }
+  }
+
+  function anadirLinea() {
+    if (!articuloSel || !(cantidadNum > 0)) return
+    setLineas((prev) => [
+      ...prev,
+      {
+        articulo_id: articuloSel.id,
+        nombre: articuloSel.nombre,
+        unidad: articuloSel.unidad,
+        cantidad: cantidadNum,
+      },
+    ])
+    setBusqueda('')
+    setCantidad('')
+    articuloRef.current?.focus()
+  }
+
+  function alTeclearCantidad(evento) {
+    if (evento.key === 'Enter') {
+      evento.preventDefault()
+      anadirLinea()
+    }
   }
 
   async function enviar(evento) {
     evento.preventDefault()
     setErrores(null)
+    if (lineas.length === 0) {
+      setErrores({ general: ['Añade al menos una línea.'] })
+      return
+    }
     setEnviando(true)
     try {
       await ordenesApi.crear({
-        codigo,
+        nombre,
         lineas: lineas.map((linea) => ({
-          articulo_id: Number(linea.articulo_id),
-          cantidad: Number(linea.cantidad),
+          articulo_id: linea.articulo_id,
+          cantidad: linea.cantidad,
         })),
       })
-      setCodigo('')
-      setLineas([{ articulo_id: '', cantidad: '' }])
+      setNombre('')
+      setLineas([])
       await alCrear()
     } catch (fallo) {
       setErrores(fallo.errores ?? { general: ['No se pudo crear la orden.'] })
@@ -157,70 +194,85 @@ function FormularioOrden({ articulos, alCrear }) {
   return (
     <form className="tarjeta" onSubmit={enviar}>
       <h2>nueva orden</h2>
+      <p className="ayuda-campo">
+        El código se genera solo (OP-0001…). Ponle un nombre y añade líneas.
+      </p>
+
       <div className="campo">
-        <label htmlFor="codigo">código</label>
+        <label htmlFor="nombre-orden">nombre</label>
         <input
-          id="codigo"
-          value={codigo}
-          onChange={(e) => setCodigo(e.target.value)}
+          id="nombre-orden"
+          value={nombre}
+          placeholder="p. ej. Línea 2"
+          onChange={(e) => setNombre(e.target.value)}
           required
         />
-        {errores?.codigo && <span className="error">{errores.codigo[0]}</span>}
+        {errores?.nombre && <span className="error">{errores.nombre[0]}</span>}
       </div>
 
-      {lineas.map((linea, indice) => (
-        <div className="linea-form" key={indice}>
-          <select
-            aria-label="artículo"
-            value={linea.articulo_id}
-            onChange={(e) =>
-              cambiarLinea(indice, 'articulo_id', e.target.value)
-            }
-            required
-          >
-            <option value="">— artículo —</option>
-            {articulos.map((articulo) => (
-              <option key={articulo.id} value={articulo.id}>
-                {articulo.nombre}
-              </option>
-            ))}
-          </select>
-          <input
-            aria-label="cantidad"
-            type="number"
-            min="0.001"
-            step="0.001"
-            value={linea.cantidad}
-            onChange={(e) => cambiarLinea(indice, 'cantidad', e.target.value)}
-            required
-          />
-          {lineas.length > 1 && (
-            <button
-              type="button"
-              className="quitar"
-              aria-label="quitar línea"
-              onClick={() =>
-                setLineas((actuales) => actuales.filter((_, i) => i !== indice))
-              }
-            >
-              ×
-            </button>
-          )}
-        </div>
-      ))}
+      <div className="alta-linea">
+        <input
+          ref={articuloRef}
+          aria-label="artículo"
+          list="articulos-lista"
+          placeholder="busca un artículo…"
+          value={busqueda}
+          onChange={(e) => alElegirArticulo(e.target.value)}
+        />
+        <datalist id="articulos-lista">
+          {articulos.map((articulo) => (
+            <option key={articulo.id} value={articulo.nombre} />
+          ))}
+        </datalist>
+        <input
+          ref={cantidadRef}
+          aria-label="cantidad"
+          type="number"
+          min="0.001"
+          step="0.001"
+          placeholder="cantidad"
+          value={cantidad}
+          onChange={(e) => setCantidad(e.target.value)}
+          onKeyDown={alTeclearCantidad}
+        />
+        <button
+          type="button"
+          className="boton boton-secundario"
+          onClick={anadirLinea}
+          disabled={!articuloSel || !(cantidadNum > 0)}
+        >
+          añadir
+        </button>
+      </div>
 
-      <button
-        type="button"
-        className="boton boton-secundario"
-        onClick={() =>
-          setLineas((actuales) => [
-            ...actuales,
-            { articulo_id: '', cantidad: '' },
-          ])
-        }
-      >
-        añadir línea
-      </button>
+      {articuloSel && (
+        <p className={`disponible-hint${superaStock ? ' aviso' : ''}`}>
+          disponible: {articuloSel.disponible} {articuloSel.unidad}
+          {superaStock && ' — pides más de lo que hay (saldrá parcial)'}
+        </p>
+      )}
+
+      {lineas.length > 0 && (
+        <ul className="lineas-anadidas">
+          {lineas.map((linea, indice) => (
+            <li key={indice}>
+              <span>
+                {linea.cantidad} {linea.unidad} · {linea.nombre}
+              </span>
+              <button
+                type="button"
+                className="quitar"
+                aria-label={`quitar ${linea.nombre}`}
+                onClick={() =>
+                  setLineas((prev) => prev.filter((_, i) => i !== indice))
+                }
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {errores?.general && (
         <p className="error" role="alert">
@@ -228,7 +280,11 @@ function FormularioOrden({ articulos, alCrear }) {
         </p>
       )}
 
-      <button type="submit" className="boton" disabled={enviando}>
+      <button
+        type="submit"
+        className="boton"
+        disabled={enviando || lineas.length === 0}
+      >
         {enviando ? 'lanzando…' : 'lanzar orden'}
       </button>
     </form>
@@ -264,7 +320,10 @@ function OrdenCard({ orden, alCambiar }) {
   return (
     <div className="tarjeta orden">
       <header className="orden-cabecera">
-        <strong>{orden.codigo}</strong>
+        <span className="orden-titulo">
+          <strong>{orden.nombre ?? orden.codigo}</strong>
+          {orden.nombre && <span className="orden-codigo">{orden.codigo}</span>}
+        </span>
         <span className={`estado estado-${orden.estado}`}>
           {ESTADO_ORDEN[orden.estado] ?? orden.estado}
         </span>

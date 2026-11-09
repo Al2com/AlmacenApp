@@ -110,6 +110,69 @@ button {
   padding: 6px 14px;
 }
 
+.ayuda-campo {
+  margin: -0.25rem 0 0.75rem;
+  color: var(--texto-2);
+  font-size: 0.85rem;
+}
+
+.alta-linea {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.alta-linea input[list] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.alta-linea input[type='number'] {
+  width: 96px;
+  flex: 0 0 auto;
+}
+
+.disponible-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: var(--texto-2);
+}
+
+.disponible-hint.aviso {
+  color: var(--naranja-texto);
+  font-weight: 600;
+}
+
+.lineas-anadidas {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lineas-anadidas li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--hormigon);
+  border-radius: 6px;
+}
+
+.orden-titulo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.orden-codigo {
+  font-size: 0.78rem;
+  color: var(--texto-2);
+}
+
 .campo {
   display: flex;
   flex-direction: column;
