@@ -22,6 +22,7 @@ class ArticuloResource extends JsonResource
             'nombre' => $this->nombre,
             'unidad' => $this->unidad,
             'tiene_caducidad' => $this->tiene_caducidad,
+            'disponible' => (float) ($this->disponible ?? 0),
         ];
     }
 }

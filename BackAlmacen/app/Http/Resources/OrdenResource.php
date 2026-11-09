@@ -19,6 +19,7 @@ class OrdenResource extends JsonResource
         return [
             'id' => $this->id,
             'codigo' => $this->codigo,
+            'nombre' => $this->nombre,
             'estado' => $this->estado->value,
             'solicitante' => $this->whenLoaded('user', fn () => $this->user->nombre),
             'creada' => $this->created_at->toIso8601String(),

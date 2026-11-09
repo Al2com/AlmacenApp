@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property string $codigo
+ * @property string|null $nombre
  * @property EstadoOrden $estado
  * @property int $user_id
  * @property Carbon $created_at
@@ -26,6 +27,7 @@ class OrdenProduccion extends Model
 
     protected $fillable = [
         'codigo',
+        'nombre',
         'estado',
         'user_id',
     ];

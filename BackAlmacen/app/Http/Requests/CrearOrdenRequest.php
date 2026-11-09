@@ -18,7 +18,8 @@ class CrearOrdenRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'codigo' => ['required', 'string', 'max:255', 'unique:ordenes_produccion,codigo'],
+            // El código lo genera el servidor; el usuario solo pone el nombre.
+            'nombre' => ['required', 'string', 'max:255'],
             'lineas' => ['required', 'array', 'min:1'],
             'lineas.*.articulo_id' => ['required', 'integer', 'exists:articulos,id'],
             'lineas.*.cantidad' => ['required', 'numeric', 'gt:0'],

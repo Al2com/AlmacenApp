@@ -61,11 +61,30 @@ class OrdenController extends Controller
             ];
         }
 
-        $orden = $this->lanzar->lanzar($usuario, (string) $request->string('codigo'), $lineas);
+        $orden = $this->lanzar->lanzar(
+            $usuario,
+            $this->siguienteCodigo(),
+            $lineas,
+            (string) $request->string('nombre'),
+        );
 
         return OrdenResource::make($orden->load(['lineas.articulo', 'user']))
             ->response()
             ->setStatusCode(201);
+    }
+
+    /**
+     * Código correlativo del tipo OP-0001. Se toma el mayor número ya usado con
+     * ese formato y se suma uno, para no repetir ni reutilizar.
+     */
+    private function siguienteCodigo(): string
+    {
+        $ultimo = OrdenProduccion::query()
+            ->pluck('codigo')
+            ->map(fn (string $codigo): int => preg_match('/^OP-(\d+)$/', $codigo, $m) ? (int) $m[1] : 0)
+            ->max();
+
+        return 'OP-'.str_pad((string) (($ultimo ?? 0) + 1), 4, '0', STR_PAD_LEFT);
     }
 
     public function show(OrdenProduccion $orden): OrdenResource

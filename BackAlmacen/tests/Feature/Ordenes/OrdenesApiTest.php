@@ -42,15 +42,57 @@ class OrdenesApiTest extends TestCase
 
         $this->actingAs($this->produccion())
             ->postJson('/api/ordenes', [
-                'codigo' => 'OP-100',
+                'nombre' => 'Línea 2',
                 'lineas' => [['articulo_id' => $articulo->id, 'cantidad' => 20]],
             ])
             ->assertCreated()
-            ->assertJsonPath('data.codigo', 'OP-100')
+            ->assertJsonPath('data.nombre', 'Línea 2')
             ->assertJsonPath('data.estado', 'lanzada');
 
         $this->assertDatabaseHas('tareas_picking', ['cantidad' => 20]);
         $this->assertDatabaseHas('stock', ['cantidad_reservada' => 20]);
+    }
+
+    public function test_el_codigo_de_la_orden_se_genera_solo(): void
+    {
+        $articulo = $this->articuloConStock(50);
+
+        $codigo = $this->actingAs($this->produccion())
+            ->postJson('/api/ordenes', [
+                'nombre' => 'Primera',
+                'lineas' => [['articulo_id' => $articulo->id, 'cantidad' => 5]],
+            ])
+            ->assertCreated()
+            ->json('data.codigo');
+
+        $this->assertMatchesRegularExpression('/^OP-\d{4}$/', $codigo);
+    }
+
+    public function test_los_codigos_generados_no_se_repiten(): void
+    {
+        $articulo = $this->articuloConStock(50);
+        $produccion = $this->produccion();
+
+        $crear = fn (string $nombre) => $this->actingAs($produccion)
+            ->postJson('/api/ordenes', [
+                'nombre' => $nombre,
+                'lineas' => [['articulo_id' => $articulo->id, 'cantidad' => 5]],
+            ])
+            ->json('data.codigo');
+
+        $this->assertNotSame($crear('Una'), $crear('Otra'));
+    }
+
+    public function test_el_nombre_de_la_orden_es_obligatorio(): void
+    {
+        $articulo = $this->articuloConStock(50);
+
+        $this->actingAs($this->produccion())
+            ->postJson('/api/ordenes', [
+                'lineas' => [['articulo_id' => $articulo->id, 'cantidad' => 5]],
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('nombre');
     }
 
     public function test_cada_produccion_solo_ve_sus_ordenes(): void
@@ -95,7 +137,7 @@ class OrdenesApiTest extends TestCase
         $articulo = $this->articuloConStock(50);
 
         $orden = $this->actingAs($produccion)->postJson('/api/ordenes', [
-            'codigo' => 'OP-101',
+            'nombre' => 'Para cancelar',
             'lineas' => [['articulo_id' => $articulo->id, 'cantidad' => 20]],
         ])->json('data.id');
 
@@ -128,7 +170,7 @@ class OrdenesApiTest extends TestCase
         $articulo = $this->articuloConStock(50);
 
         $orden = $this->actingAs($produccion)->postJson('/api/ordenes', [
-            'codigo' => 'OP-BORRAR',
+            'nombre' => 'Para borrar',
             'lineas' => [['articulo_id' => $articulo->id, 'cantidad' => 20]],
         ])->json('data.id');
 

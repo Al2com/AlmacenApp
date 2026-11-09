@@ -109,7 +109,7 @@ class DemoSeeder extends Seeder
             ];
         }
 
-        (new LanzarOrden)->lanzar($produccion, 'OP-DEMO-GRANDE', $lineas);
+        (new LanzarOrden)->lanzar($produccion, 'OP-DEMO-GRANDE', $lineas, 'Pedido de demostración');
     }
 
     /**

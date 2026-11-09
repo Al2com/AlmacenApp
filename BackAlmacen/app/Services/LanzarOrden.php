@@ -23,11 +23,12 @@ class LanzarOrden
     /**
      * @param  list<array{articulo: Articulo, cantidad: float}>  $lineas
      */
-    public function lanzar(User $usuario, string $codigo, array $lineas): OrdenProduccion
+    public function lanzar(User $usuario, string $codigo, array $lineas, ?string $nombre = null): OrdenProduccion
     {
-        return DB::transaction(function () use ($usuario, $codigo, $lineas) {
+        return DB::transaction(function () use ($usuario, $codigo, $lineas, $nombre) {
             $orden = OrdenProduccion::create([
                 'codigo' => $codigo,
+                'nombre' => $nombre,
                 'estado' => EstadoOrden::Lanzada,
                 'user_id' => $usuario->id,
             ]);

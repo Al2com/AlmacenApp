@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property float|null $disponible Stock disponible, calculado al listar el catálogo (no es columna).
+ */
 class Articulo extends Model
 {
     /** @use HasFactory<ArticuloFactory> */
