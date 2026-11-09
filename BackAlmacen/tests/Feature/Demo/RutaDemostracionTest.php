@@ -3,6 +3,7 @@
 namespace Tests\Feature\Demo;
 
 use App\Enums\EstadoOrden;
+use App\Enums\EstadoTarea;
 use App\Enums\Rol;
 use App\Models\Articulo;
 use App\Models\Lote;
@@ -102,6 +103,21 @@ class RutaDemostracionTest extends TestCase
         sort($ordenadas);
         $this->assertSame($ordenadas, $secuencias);
         $this->assertNotEmpty($tareas);
+    }
+
+    public function test_tareas_solo_devuelve_las_pendientes(): void
+    {
+        // La demostración confirma de verdad; solo debe recorrer lo que queda
+        // por picar, para no intentar reconfirmar una tarea ya hecha.
+        $this->lanzar('OP-PEND');
+        $orden = OrdenProduccion::where('codigo', 'OP-PEND')->firstOrFail();
+        $primera = (new RutaDemostracion)->tareas($orden)->first();
+        $primera->forceFill(['estado' => EstadoTarea::Confirmada])->save();
+
+        $pendientes = (new RutaDemostracion)->tareas($orden);
+
+        $this->assertTrue($pendientes->every(fn ($t) => $t->estado->value === 'pendiente'));
+        $this->assertFalse($pendientes->contains('id', $primera->id));
     }
 
     public function test_no_consume_stock(): void

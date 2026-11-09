@@ -3,14 +3,15 @@
 namespace App\Services;
 
 use App\Enums\EstadoOrden;
+use App\Enums\EstadoTarea;
 use App\Models\OrdenProduccion;
 use App\Models\TareaPicking;
 use Illuminate\Support\Collection;
 
 /**
  * Datos para recrear la ruta de picking en el modo demostración: la última
- * orden lanzada y sus tareas en orden de ruta. Solo lee; no confirma ni consume
- * nada (la demostración es una recreación visual, no un picking real).
+ * orden activa y sus tareas pendientes en orden de ruta. Solo lee; la
+ * confirmación de cada línea la hace el DemostracionController con ConfirmarTarea.
  */
 class RutaDemostracion
 {
@@ -30,7 +31,9 @@ class RutaDemostracion
     }
 
     /**
-     * Las tareas de picking de una orden, en orden de ruta.
+     * Las tareas de picking pendientes de una orden, en orden de ruta. Solo las
+     * pendientes: la demostración confirma de verdad, así que no debe recorrer
+     * (ni reconfirmar) las que ya estén hechas.
      *
      * @return Collection<int, TareaPicking>
      */
@@ -40,6 +43,7 @@ class RutaDemostracion
             ->select('tareas_picking.*')
             ->join('orden_lineas', 'orden_lineas.id', '=', 'tareas_picking.orden_linea_id')
             ->where('orden_lineas.orden_id', $orden->id)
+            ->where('tareas_picking.estado', EstadoTarea::Pendiente->value)
             ->orderBy('tareas_picking.secuencia')
             ->with(['ordenLinea.orden', 'lote.articulo', 'ubicacion'])
             ->get();
